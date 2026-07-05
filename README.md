@@ -2,15 +2,25 @@
 
 Persistent, evolving shared knowledge management between a human and their AI agents.
 
-MCP and HTTP server on Cloudflare Workers.
+Every conversation with an AI agent starts cold. Mnemion gives each session access to a shared history of thinking and problem solving — read, write, search, and reshape — so context from yesterday's Claude.ai chat, this morning's Claude Code run, and tomorrow's API agent all share the same memory. It runs as an MCP and HTTP server on Cloudflare Workers.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/daniloc/mnemion/tree/main/mnemion-js)
 
 One click clones the repo to your account, provisions the resources, and deploys. You set one secret (`MNEMION_SECRET`), then register a passkey at `/setup`. Details under [**Deploy to Cloudflare**](#deploy-to-cloudflare) below.
 
-Every conversation with an AI agent starts cold. Mnemion gives each session access to a shared history of thinking and problem solving — read, write, search, and reshape — so context from yesterday's Claude.ai chat, this morning's Claude Code run, and tomorrow's API agent all share the same memory.
-
 See [`CLAUDE.md`](CLAUDE.md) for architecture and internals.
+
+## Contents
+
+- [How it works](#how-it-works)
+  - [The model](#the-model) · [The first conversation](#the-first-conversation) · [The agent surface](#the-agent-surface) · [Resources](#what-resources-agents-read)
+  - [Schema evolution](#schema-evolution-as-a-first-class-operation) · [Auto-associative recall](#auto-associative-recall) · [Memory maintenance](#memory-maintenance)
+  - [HTTP I/O and federation](#http-io-and-federation) · [Publishing](#publishing-the-publication-surface) · [Document storage (R2)](#document-storage-requires-r2-optional) · [Web URL adapters](#web-url-adapters)
+  - [Skills distribution](#skills-distribution-plugin-marketplace) · [The web UI](#the-web-ui) · [Auth model](#auth-model) · [Architecture](#architecture-in-one-paragraph)
+- [Deploy to Cloudflare](#deploy-to-cloudflare)
+- [Subsequent deploys](#subsequent-deploys)
+- [Local development](#local-development)
+- [Repository layout](#repository-layout)
 
 ## How it works
 
@@ -23,6 +33,20 @@ See [`CLAUDE.md`](CLAUDE.md) for architecture and internals.
 - **Link** — a typed connection between entries (a foreign key)
 
 Mnemion ships **empty**. There is no prescribed schema. The first conversation creates the first pattern based on what actually needs to happen. The structure that emerges after a month encodes what matters in *this* working relationship.
+
+### The first conversation
+
+There's no onboarding flow — you just talk:
+
+> **You:** We decided to use Postgres over SQLite for the sync service. Worth remembering.
+>
+> **Agent:** I'll set up a `decisions` pattern for this kind of thing. *(calls `propose_change`, shows you the preview, commits with `apply_change`, then `mutate`s the entry in)*
+
+A week later, in a different client:
+
+> **You:** Remind me why we went with Postgres?
+>
+> **Agent:** *(calls `prime` with the conversational context; the decision surfaces)* You chose it over SQLite for the sync service because…
 
 ### The agent surface
 
@@ -94,8 +118,8 @@ A hive that only accumulates eventually whispers stale things back. Mnemion coun
 
 Patterns can grow HTTP endpoints. Five kinds of agent-defined I/O, all expressed as entries:
 
-- **Publications** (`_publications`) — the hive's publication surface. An entry declares a path, a source query, and a transport (**HTML, RSS, JSON, or Markdown with YAML frontmatter**); `GET /p/{path}` renders **live pattern data at request time** — nothing rendered is ever stored, so the page can't go stale. HTML ships opinionated defaults (semantic markup, light/dark, no JS) with two seams: a per-entry `{{facet}}` template (values escaped, template text raw) and a `css` override appended after the defaults. Superseded entries are excluded by default — public projections show current truth. Creation is consent-gated like sharing.
-- **Documents** (`_documents`) — an R2-backed file store (**optional — requires R2; see below**). A `_documents` entry holds agent-defined metadata (title, description, tags, visibility); the bytes live in R2, never in the hive. Creating an entry returns a single-use `upload_url`; you `POST` the file (≤25 MB) and it's served at `GET /f/{id}`, gated by the entry's visibility. The metadata is the evolvable knowledge layer; the file is immutable truth it points at — references, not copies. Archiving the entry deletes the blob. Making a file non-private is consent-gated.
+- **Publications** (`_publications`) — live projections of pattern data rendered at request time at `GET /p/{path}`, as HTML, RSS, JSON, or Markdown. The hive's people-facing publishing surface — detailed in [Publishing](#publishing-the-publication-surface) below.
+- **Documents** (`_documents`) — an R2-backed file store (**optional — requires R2; see [below](#document-storage-requires-r2-optional)**). A `_documents` entry holds agent-defined metadata (title, description, tags, visibility); the bytes live in R2, never in the hive. Creating an entry returns a single-use `upload_url`; you `POST` the file (≤25 MB) and it's served at `GET /f/{id}`, gated by the entry's visibility. Archiving the entry deletes the blob. Making a file non-private is consent-gated.
 - **Shared entries** (`_shared`) — flip an entry to `public` and it becomes readable at `/o/entry/{pattern}/{id}`, edge-cached. Flip to `unlisted` and it's readable by anyone with an auth-code token.
 - **Egress** (`_outputs`) — agent-constructed static responses at arbitrary `/o/{path}` URLs.
 - **Ingress** (`_inputs`) — `POST /i/{path}` endpoints accept inbound data and create entries in target patterns, with an optional declarative transform DSL to map incoming fields.
@@ -188,7 +212,7 @@ Layered, behind OAuth 2.1 with PKCE and Dynamic Client Registration:
 
 ### Architecture in one paragraph
 
-A single Cloudflare Worker hosts everything. Two Durable Objects: **SessionDO** (one per MCP session, runs the protocol) and **HiveDO** (one per user, owns all SQLite storage — patterns, entries, facets, links, audit logs, the works). Embeddings live in Vectorize. OAuth tokens live in KV. Workers AI generates embeddings on every mutate. The full routing surface is declared as a table in `src/index.ts`; the full schema-evolution surface as a table in `entities/Hive/evolution.ts`. Code is structured as scannable schematics, not procedural chains — see [`CLAUDE.md`](CLAUDE.md) for the design principles ("data is destiny," "code as schematic") that govern the codebase.
+A single Cloudflare Worker hosts everything. Two Durable Objects: **SessionDO** (one per MCP session, runs the protocol) and **HiveDO** (one per user, owns all SQLite storage — patterns, entries, facets, links, audit logs, the works). Embeddings are generated by Workers AI on every mutate and live in Vectorize; OAuth tokens live in KV. See [`CLAUDE.md`](CLAUDE.md) for the component map and the design principles ("data is destiny," "code as schematic") that govern the codebase.
 
 ## Deploy to Cloudflare
 
@@ -217,13 +241,13 @@ storage requires R2* above — but everything else works immediately.)
 
 ### Or, from a clone (CLI)
 
-### Prerequisites
+#### Prerequisites
 
 - Node.js 22+ (required by Wrangler 4)
 - A Cloudflare account (Wrangler will prompt for browser login on first use)
 - `openssl` (preinstalled on macOS and most Linux distros)
 
-### One command
+#### One command
 
 From the repo root:
 
@@ -241,7 +265,7 @@ npm run setup
 
 Open that URL once in a browser to register a passkey. After that, browser-based OAuth uses the passkey; the master secret remains as a fallback for headless agents and re-registration.
 
-### Optional: rename the worker
+#### Optional: rename the worker
 
 By default the worker deploys as `mnemion`. If you want a different subdomain (or you already have a worker by that name on your account), edit `name` and `WORKER_HOST` in `mnemion-js/wrangler.toml` before running setup.
 
@@ -275,3 +299,13 @@ npm test           # vitest suite (runs in workerd via @cloudflare/vitest-pool-w
 For React-app-only iteration: `cd mnemion-js && npm run dev:app`.
 
 The dev scripts pass `--var DEV:true` — the **explicit** opt-in for dev-mode OAuth auto-approve (`Auth.DEV`), so locally you can hit the worker without a passkey or secret. A real deploy never sets `DEV`, so the same secretless state fails closed in production.
+
+## Repository layout
+
+- [`mnemion-js/`](mnemion-js/) — the worker: Durable Objects, MCP tools, the React web app, tests
+- [`project-docs/`](project-docs/) — design documents
+- [`CLAUDE.md`](CLAUDE.md) — architecture, component map, design principles
+
+## License
+
+[MIT](LICENSE)

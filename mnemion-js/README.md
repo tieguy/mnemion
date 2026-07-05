@@ -1,50 +1,15 @@
 # Mnemion Server
 
-MCP server on Cloudflare Workers providing persistent, evolving shared memory between a human and their AI agents.
+The Cloudflare Worker: an MCP server providing persistent, evolving shared memory between a human and their AI agents.
 
-## Setup
+**Start at the [root README](../README.md)** for what Mnemion is, the full tool/resource surface, and deployment (one-click or `npm run setup` — plain `wrangler deploy` skips the Vectorize index and `WORKER_HOST` pinning that setup handles). Architecture and design principles live in [`CLAUDE.md`](../CLAUDE.md).
+
+## Local development
 
 ```bash
 npm install
+npm run dev    # wrangler dev (worker + DOs, seeded) + Vite HMR for the React app — open the Vite URL
+npm test       # vitest suite (runs in workerd via @cloudflare/vitest-pool-workers)
 ```
 
-## Run locally
-
-```bash
-npm run dev
-```
-
-Dev mode: no password needed. MCP endpoint at `http://localhost:8787/mcp`.
-
-## Deploy
-
-```bash
-npx wrangler deploy
-npx wrangler secret put MNEMION_SECRET   # set your password (one-time)
-```
-
-MCP endpoint at `https://<your-worker>.workers.dev/mcp`.
-
-## Test
-
-With the dev server running:
-
-```bash
-./test-vertical-slice.sh
-```
-
-## Tools
-
-- `resolve(uri)` — read anything by `mnemion://` address
-- `query(object, ...)` — filtered, sorted reads with `count_only` mode
-- `search(term)` — cross-object full-text search
-- `mutate(object, operation, data)` — create, update, or archive records
-- `propose_change(description, change)` — propose schema evolution
-- `apply_change(change_id)` — commit a proposed change
-
-## Resources
-
-- `mnemion://index` — master index
-- `mnemion://schema/{object}` — field definitions per object
-- `mnemion://history` — schema evolution history
-- `mnemion://records/{object}/{id}` — individual record
+Dev mode auto-approves auth (`DEV=true` is set by the dev scripts only) — no passkey or secret needed locally. MCP endpoint at `http://localhost:8787/mcp`.
