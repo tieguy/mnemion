@@ -1,51 +1,57 @@
 {
   "project": "mnemion-js",
   "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
-  "generatedAt": "2026-08-03 14:31Z",
+  "generatedAt": "2026-08-03 15:27Z",
   "head": {
-    "commit": "8dbad71",
+    "commit": "8165daf",
     "dirty": true
   },
   "frame": {
-    "kind": "first",
-    "ref": null,
-    "commit": null,
-    "at": null,
-    "commits": null,
-    "why": "no prior index and no tags in this repository. A FIRST LOOK has no news by definition: everything below is the standing state, not a delta."
+    "kind": "cursor",
+    "ref": "8165daf",
+    "commit": "8165daf",
+    "at": "2026-08-03T11:23:05-04:00",
+    "commits": 0,
+    "why": "the HEAD this Index recorded the last time it ran — literally since you last looked."
   },
   "sources": [
     {
       "name": "graph",
       "ok": true,
-      "detail": "8 component(s), 116 claim(s), 68 file(s) derived from the spec tree"
+      "detail": "8 component(s), 119 claim(s), 68 file(s) derived from the spec tree"
     },
     {
       "name": ".coherence/status.json — verify",
       "ok": true,
-      "detail": "116 claim verdict(s), 0 failure(s), tier fast",
-      "at": "2026-08-03T14:14:20.214Z",
-      "commit": "8dbad71",
+      "detail": "119 claim verdict(s), 0 failure(s), tier fast",
+      "at": "2026-08-03T15:26:58.576Z",
+      "commit": "8165daf",
       "stale": false
     },
     {
       "name": ".coherence/status.json — atlas",
       "ok": true,
       "detail": "15 crossing(s) graded",
-      "at": "2026-07-11T01:16:19.352Z",
-      "commit": "8dbad71",
+      "at": "2026-08-03T15:26:58.041Z",
+      "commit": "8165daf",
       "stale": false
     },
     {
       "name": "git history",
       "ok": true,
-      "detail": "142 concern-carrying commit(s) in the last 200, touching 215 path(s)",
-      "commit": "8dbad71"
+      "detail": "142 concern-carrying commit(s) in the last 200, touching 223 path(s)",
+      "commit": "8165daf"
     },
     {
       "name": ".coherence/decisions",
       "ok": true,
-      "detail": "1 record(s) across 1 session(s)"
+      "detail": "4 record(s) across 1 session(s)"
+    },
+    {
+      "name": "structural diff vs 8165daf",
+      "ok": true,
+      "detail": "0 structural change(s), 0 loss(es)",
+      "commit": "8165daf"
     }
   ],
   "map": {
@@ -146,12 +152,12 @@
         "label": "Mnemion",
         "dir": ".",
         "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
-        "zone": null,
+        "zone": "served-untrusted",
         "guards": [],
         "files": 5,
         "lines": 417,
         "accountedFiles": 1,
-        "claims": 4,
+        "claims": 5,
         "gates": 0,
         "grades": {
           "A": 0,
@@ -166,7 +172,7 @@
         "witnessed": 0,
         "symbols": 13,
         "undocumented": 8,
-        "naked": 0
+        "naked": 1
       },
       {
         "label": "Session",
@@ -198,12 +204,12 @@
         "label": "Features",
         "dir": "entities/features",
         "intent": "Per-feature manifests that FEED the scattered registries from one declaration; composers derive each registry from the `FEATURES` array.",
-        "zone": null,
+        "zone": "storage",
         "guards": [],
         "files": 17,
         "lines": 1238,
         "accountedFiles": 14,
-        "claims": 43,
+        "claims": 44,
         "gates": 0,
         "grades": {
           "A": 0,
@@ -218,18 +224,18 @@
         "witnessed": 0,
         "symbols": 39,
         "undocumented": 21,
-        "naked": 0
+        "naked": 1
       },
       {
         "label": "Auth",
         "dir": "shared/Auth",
         "intent": "Credential primitives — multi-member passkeys and scoped access/register tokens — isolated as pure db-accessor functions.",
-        "zone": null,
+        "zone": "storage",
         "guards": [],
         "files": 2,
         "lines": 599,
         "accountedFiles": 2,
-        "claims": 3,
+        "claims": 4,
         "gates": 0,
         "grades": {
           "A": 0,
@@ -309,21 +315,6 @@
       "shown": [
         {
           "comp": "Hive",
-          "inv": "egress-sensitivity totality",
-          "chokepoint": "SENSITIVE_COLUMNS",
-          "verb": "test",
-          "oracle": "egress-sensitivity totality",
-          "grade": "U",
-          "verdict": "unknown",
-          "crossing": {
-            "from": "storage",
-            "to": "public-egress"
-          },
-          "reliants": 1,
-          "witnessed": false
-        },
-        {
-          "comp": "Hive",
           "inv": "kernel read+write capability",
           "chokepoint": "query",
           "verb": "guard",
@@ -333,6 +324,21 @@
           "crossing": {
             "from": "served-untrusted",
             "to": "storage"
+          },
+          "reliants": 2,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "egress-sensitivity totality",
+          "chokepoint": "SENSITIVE_COLUMNS",
+          "verb": "test",
+          "oracle": "egress-sensitivity totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "storage",
+            "to": "public-egress"
           },
           "reliants": 1,
           "witnessed": false
@@ -551,95 +557,13 @@
     "crossings": {
       "shown": [
         {
-          "sym": "applyKernelRules",
-          "from": "agent-mcp",
-          "to": "storage",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Hive"
-        },
-        {
-          "sym": "currentHost",
-          "from": "public-egress",
-          "to": "owner-trusted",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": null,
-          "ownerWhy": "no component owns a symbol named `currentHost`, so this crossing counts toward nobody's perimeter."
-        },
-        {
-          "sym": "denyUnlessBearerScope",
-          "from": "public-egress",
-          "to": "served-untrusted",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Routing"
-        },
-        {
-          "sym": "findUngatedCredentialMints",
-          "from": "agent-mcp",
-          "to": "owner-trusted",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Hive"
-        },
-        {
-          "sym": "inertHeaders",
-          "from": "served-untrusted",
-          "to": "public-egress",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Routing"
-        },
-        {
-          "sym": "isBlockedFederationHost",
-          "from": "owner-trusted",
-          "to": "federated",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Hive"
-        },
-        {
-          "sym": "isBroadTokenScope",
-          "from": "agent-mcp",
-          "to": "owner-trusted",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Hive"
-        },
-        {
-          "sym": "mintSecrets",
-          "from": "agent-mcp",
-          "to": "storage",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": null,
-          "ownerWhy": "no component owns a symbol named `mintSecrets`, so this crossing counts toward nobody's perimeter."
-        },
-        {
           "sym": "ownerDataCtx",
           "from": "served-untrusted",
           "to": "owner-trusted",
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": null,
+          "heat": 0.09859154929577464,
           "owner": null,
           "ownerWhy": "no component owns a symbol named `ownerDataCtx`, so this crossing counts toward nobody's perimeter."
         },
@@ -650,37 +574,7 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": null,
-          "owner": "Hive"
-        },
-        {
-          "sym": "quoteIdent",
-          "from": "agent-mcp",
-          "to": "storage",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Core"
-        },
-        {
-          "sym": "sealAll",
-          "from": "storage",
-          "to": "public-egress",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
-          "owner": "Hive"
-        },
-        {
-          "sym": "SENSITIVE_COLUMNS",
-          "from": "storage",
-          "to": "public-egress",
-          "tier": 2,
-          "security": true,
-          "present": true,
-          "heat": null,
+          "heat": 0.09859154929577464,
           "owner": "Hive"
         },
         {
@@ -690,9 +584,80 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": null,
+          "heat": 0.09859154929577464,
           "owner": null,
           "ownerWhy": "no component owns a symbol named `servedDataCtx`, so this crossing counts toward nobody's perimeter."
+        },
+        {
+          "sym": "applyKernelRules",
+          "from": "agent-mcp",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08450704225352113,
+          "owner": "Hive"
+        },
+        {
+          "sym": "findUngatedCredentialMints",
+          "from": "agent-mcp",
+          "to": "owner-trusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08450704225352113,
+          "owner": "Hive"
+        },
+        {
+          "sym": "isBlockedFederationHost",
+          "from": "owner-trusted",
+          "to": "federated",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08450704225352113,
+          "owner": "Hive"
+        },
+        {
+          "sym": "isBroadTokenScope",
+          "from": "agent-mcp",
+          "to": "owner-trusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08450704225352113,
+          "owner": "Hive"
+        },
+        {
+          "sym": "mintSecrets",
+          "from": "agent-mcp",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08450704225352113,
+          "owner": null,
+          "ownerWhy": "no component owns a symbol named `mintSecrets`, so this crossing counts toward nobody's perimeter."
+        },
+        {
+          "sym": "sealAll",
+          "from": "storage",
+          "to": "public-egress",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08450704225352113,
+          "owner": "Hive"
+        },
+        {
+          "sym": "SENSITIVE_COLUMNS",
+          "from": "storage",
+          "to": "public-egress",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.08450704225352113,
+          "owner": "Hive"
         },
         {
           "sym": "writeClass",
@@ -701,15 +666,56 @@
           "tier": 2,
           "security": true,
           "present": true,
-          "heat": null,
+          "heat": 0.08450704225352113,
           "owner": "Hive"
+        },
+        {
+          "sym": "inertHeaders",
+          "from": "served-untrusted",
+          "to": "public-egress",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.07042253521126761,
+          "owner": "Routing"
+        },
+        {
+          "sym": "denyUnlessBearerScope",
+          "from": "public-egress",
+          "to": "served-untrusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.04929577464788732,
+          "owner": "Routing"
+        },
+        {
+          "sym": "currentHost",
+          "from": "public-egress",
+          "to": "owner-trusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.007042253521126761,
+          "owner": null,
+          "ownerWhy": "no component owns a symbol named `currentHost`, so this crossing counts toward nobody's perimeter."
+        },
+        {
+          "sym": "quoteIdent",
+          "from": "agent-mcp",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": 0.007042253521126761,
+          "owner": "Core"
         }
       ],
       "withheld": 0,
       "total": 15
     },
     "atlas": {
-      "at": "2026-07-11T01:16:19.352Z",
+      "at": "2026-08-03T15:26:58.041Z",
       "stale": false,
       "tiers": {
         "enshrined": 0,
@@ -793,22 +799,22 @@
         "key": "unvisited",
         "label": "unvisited",
         "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
-        "dark": 147,
-        "total": 215,
+        "dark": 155,
+        "total": 223,
         "unit": "paths touched in the concern band",
         "worst": {
           "shown": [
             ".dev.vars.example",
             ".npmrc",
             "AGENTS.md",
+            "Mnemion.spec.md",
             "assets/fonts/HankenGrotesk.ttf",
             "assets/fonts/SplineSansMono.ttf",
             "coherence.config.json",
-            "docs/coherence/_graph.html",
-            "docs/coherence/_overview.html"
+            "docs/coherence/_contract.html"
           ],
-          "withheld": 139,
-          "total": 147
+          "withheld": 147,
+          "total": 155
         }
       }
     ]
@@ -820,12 +826,62 @@
       "total": 0
     },
     "open": {
-      "shown": [],
+      "shown": [
+        {
+          "id": "d-00ccde75",
+          "kind": "conjecture",
+          "at": "2026-08-03T15:26:49.656Z",
+          "agent": "main",
+          "session": "main-main-2026-08-03",
+          "commit": "8165daf",
+          "chose": "3 of 5 naked promise-graph edges point at Session solely because tools.ts (pure metadata SSOT) lives there",
+          "because": "",
+          "over": [],
+          "couldBe": [
+            "the instrument is wrong — the thing that PRODUCED this number, not the thing it describes",
+            "moving TOOLS to shared/core dissolves Hive->Session and Routing->Session entirely, per dissolve>declare"
+          ],
+          "discriminatedBy": "relocate tools.ts to shared/core, re-run coherence contract, and count naked edges",
+          "news": true
+        }
+      ],
       "withheld": 0,
-      "total": 0
+      "total": 1
     },
     "decisions": {
       "shown": [
+        {
+          "id": "d-dd3b0d3c",
+          "kind": "decision",
+          "at": "2026-08-03T15:26:48.987Z",
+          "agent": "main",
+          "session": "main-main-2026-08-03",
+          "commit": "8165daf",
+          "chose": "accept 5 naked reliance edges (3x ->Session for TOOLS/serve wiring, IO->Hive derivation helpers, Features->Routing manifest route wiring) as documented composition edges",
+          "because": "none carries a runtime trust escalation: TOOLS is pure metadata (a declared atlas nonTransition), deriveLabel/parseDbDate are pure functions, and manifest route handlers are gated per-route by the Auth enum at dispatch; a fabricated gate claim would be worse than an honest naked edge",
+          "over": [
+            "authoring gate claims for them or refactoring now"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
+        {
+          "id": "d-9441445c",
+          "kind": "decision",
+          "at": "2026-08-03T15:26:14.429Z",
+          "agent": "main",
+          "session": "main-main-2026-08-03",
+          "commit": "8165daf",
+          "chose": "Core stays zoneless in the promise graph (no lives-in claim)",
+          "because": "Core is zone-neutral vocabulary imported from every zone (palettes, constants, escape, sql); any single residence fabricates false crossings on most of its inbound edges, while its real chokepoints (quoteIdent, escapeXml) are already anchored by Hive/Routing gates and the lint-sinks ratchet",
+          "over": [
+            "assigning it storage or served-untrusted like its siblings"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": true
+        },
         {
           "id": "d-de4de09e",
           "kind": "decision",
@@ -844,7 +900,7 @@
         }
       ],
       "withheld": 0,
-      "total": 1
+      "total": 3
     },
     "marks": [
       {
@@ -852,6 +908,27 @@
         "lane": "decision",
         "at": "2026-08-03T14:15:12.423Z",
         "news": false,
+        "shown": true
+      },
+      {
+        "id": "d-9441445c",
+        "lane": "decision",
+        "at": "2026-08-03T15:26:14.429Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-dd3b0d3c",
+        "lane": "decision",
+        "at": "2026-08-03T15:26:48.987Z",
+        "news": true,
+        "shown": true
+      },
+      {
+        "id": "d-00ccde75",
+        "lane": "open",
+        "at": "2026-08-03T15:26:49.656Z",
+        "news": true,
         "shown": true
       }
     ],
@@ -863,26 +940,84 @@
     },
     "totals": {
       "blocked": 0,
-      "open": 0,
-      "decisions": 1,
-      "records": 1,
+      "open": 1,
+      "decisions": 3,
+      "records": 4,
       "sessions": 1,
       "unreadable": 0
     },
     "news": {
       "blocked": 0,
-      "open": 0,
-      "decisions": 0
+      "open": 1,
+      "decisions": 2
     }
   },
   "trajectory": {
-    "structural": null,
-    "structuralWhy": "no prior index and no tags in this repository. A FIRST LOOK has no news by definition: everything below is the standing state, not a delta.",
-    "loc": null,
+    "structural": {
+      "componentsAdded": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "componentsRemoved": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "invAdded": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "invRemoved": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "boundaryAdded": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "boundaryRemoved": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "boundaryRewired": {
+        "shown": [],
+        "withheld": 0,
+        "total": 0
+      },
+      "claimDelta": [
+        {
+          "comp": "Mnemion",
+          "added": 1,
+          "removed": 0
+        },
+        {
+          "comp": "Features",
+          "added": 1,
+          "removed": 0
+        },
+        {
+          "comp": "Auth",
+          "added": 1,
+          "removed": 0
+        }
+      ],
+      "changes": 0,
+      "losses": 0
+    },
+    "structuralWhy": null,
+    "loc": {
+      "added": 0,
+      "deleted": 0
+    },
     "mass": null,
     "drift": {
       "at": "2026-07-11T01:18:19.027Z",
-      "stale": false,
+      "stale": true,
       "locality": [
         1,
         1,

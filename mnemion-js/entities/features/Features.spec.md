@@ -3,6 +3,7 @@
 Per-feature manifests that FEED the scattered registries from one declaration; composers derive each registry from the `FEATURES` array.
 
 ## works when
+- lives in storage
 - feature.ts exists at this node
 - compose.ts exists at this node
 - index.ts exists at this node

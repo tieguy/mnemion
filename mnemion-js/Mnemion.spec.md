@@ -11,6 +11,7 @@ Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route
 - federated: Cross-hive resolve over the network — a sovereign foreign hive.
 
 ## works when
+- lives in served-untrusted
 - src/index.ts exists at root
 - wrangler.toml exists at root
 - README.md exists at root

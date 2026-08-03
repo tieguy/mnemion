@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03 14:14Z",
+  "generatedAt": "2026-08-03 15:26Z",
   "root": "mnemion-js",
   "absRoot": "/Users/daniloc/Documents/Development/mnemion/mnemion-js",
   "nodes": [
@@ -10,6 +10,7 @@
       "sub": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
       "claimed": true,
       "claims": [
+        "lives in served-untrusted",
         "src/index.ts exists at root",
         "wrangler.toml exists at root",
         "README.md exists at root",
@@ -107,6 +108,7 @@
       "sub": "Per-feature manifests that FEED the scattered registries from one declaration; composers derive each registry from the `FEATURES` array.",
       "claimed": true,
       "claims": [
+        "lives in storage",
         "feature.ts exists at this node",
         "compose.ts exists at this node",
         "index.ts exists at this node",
@@ -160,6 +162,7 @@
       "sub": "Credential primitives — multi-member passkeys and scoped access/register tokens — isolated as pure db-accessor functions.",
       "claimed": true,
       "claims": [
+        "lives in storage",
         "credentials.ts exists at this node",
         "passkey.ts exists at this node",
         "passkey.ts imports @simplewebauthn/server"

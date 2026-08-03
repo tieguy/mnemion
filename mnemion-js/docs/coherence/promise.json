@@ -1,8 +1,8 @@
 {
   "root": "mnemion-js",
   "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
-  "generatedAt": "2026-08-03T14:41:54.872Z",
-  "head": "cf2d052",
+  "generatedAt": "2026-08-03T15:26:15.220Z",
+  "head": "8165daf",
   "dirty": true,
   "zones": [
     {
@@ -41,27 +41,39 @@
       "label": "Mnemion",
       "dir": ".",
       "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
-      "zone": null,
+      "zone": "served-untrusted",
       "gates": [],
       "relies": [
         {
           "to": "entities/Hive",
-          "crossing": null,
-          "via": null
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "storage"
+          },
+          "via": "kernel read+write capability"
         },
         {
           "to": "entities/Session",
-          "crossing": null,
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "agent-mcp"
+          },
           "via": null
         },
         {
           "to": "entities/features",
-          "crossing": null,
-          "via": null
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "storage"
+          },
+          "via": "kernel read+write capability"
         },
         {
           "to": "shared/Routing",
-          "crossing": null,
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "served-untrusted"
+          },
           "via": null
         },
         {
@@ -112,6 +124,7 @@
           "grade": "U",
           "verdict": "unknown",
           "reliants": [
+            ".",
             "shared/Routing"
           ]
         },
@@ -263,12 +276,18 @@
         },
         {
           "to": "entities/features",
-          "crossing": null,
+          "crossing": {
+            "from": "storage",
+            "to": "storage"
+          },
           "via": null
         },
         {
           "to": "shared/Auth",
-          "crossing": null,
+          "crossing": {
+            "from": "storage",
+            "to": "storage"
+          },
           "via": null
         },
         {
@@ -339,17 +358,23 @@
       "label": "Features",
       "dir": "entities/features",
       "intent": "Per-feature manifests that FEED the scattered registries from one declaration; composers derive each registry from the `FEATURES` array.",
-      "zone": null,
+      "zone": "storage",
       "gates": [],
       "relies": [
         {
           "to": "entities/Hive",
-          "crossing": null,
+          "crossing": {
+            "from": "storage",
+            "to": "storage"
+          },
           "via": null
         },
         {
           "to": "shared/Routing",
-          "crossing": null,
+          "crossing": {
+            "from": "storage",
+            "to": "served-untrusted"
+          },
           "via": null
         },
         {
@@ -371,12 +396,15 @@
       "label": "Auth",
       "dir": "shared/Auth",
       "intent": "Credential primitives — multi-member passkeys and scoped access/register tokens — isolated as pure db-accessor functions.",
-      "zone": null,
+      "zone": "storage",
       "gates": [],
       "relies": [
         {
           "to": "entities/Hive",
-          "crossing": null,
+          "crossing": {
+            "from": "storage",
+            "to": "storage"
+          },
           "via": null
         },
         {

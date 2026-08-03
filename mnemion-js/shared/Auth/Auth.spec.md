@@ -3,6 +3,7 @@
 Credential primitives — multi-member passkeys and scoped access/register tokens — isolated as pure db-accessor functions.
 
 ## works when
+- lives in storage
 - credentials.ts exists at this node
 - passkey.ts exists at this node
 - passkey.ts imports @simplewebauthn/server
