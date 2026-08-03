@@ -20,25 +20,29 @@ the destination chart's invariant. Trust is directional — only an enshrined ch
 
 ## Transition maps (chokepoints), by tier
 
-| tier | from → to | chokepoint | oracle | re-establishes |
-| --- | --- | --- | --- | --- |
-| tier-1 | `public-egress` → `owner-trusted` | `currentHost` | instance-identity host resolution (via resolveHost) | returns WORKER_HOST and IGNORES the inbound Host — a spoofed Host can't poison an owner capability URL |
-| tier-1 | `public-egress` → `served-untrusted` | `denyUnlessBearerScope` | served bearer-gating totality | refuses an unlisted served read unless the request carries a bearer token whose scope matches |
-| tier-1 | `owner-trusted` → `federated` | `isBlockedFederationHost` | SSRF block-host totality | blocks loopback/private/link-local/metadata hosts outright — they can't be allow-listed or token-leaked-to |
-| tier-1 | `agent-mcp` → `owner-trusted` | `isBroadTokenScope` | broad-token scope-grammar totality | recognizes broad token scopes so minting one is consent-gated — an agent can't silently mint '*' standing access |
-| tier-1 | `served-untrusted` → `owner-trusted` | `ownerDataCtx` | context-capability totality (via query) | raises trust to kernel-full — the sole trusted:true capability; structurally the only door up |
-| tier-1 | `served-untrusted` → `storage` | `query` | context-capability totality | refuses a kernel-pattern READ from an untrusted ctx (the symmetric read half of the trust flag) |
-| tier-1 | `agent-mcp` → `storage` | `quoteIdent` | quoteIdent — grammar | quotes a SQL identifier (pattern/column) before interpolation — beneath the kernel-column allow-lists |
-| tier-1 | `owner-trusted` → `served-untrusted` | `servedDataCtx` | context-capability totality (via query) | lowers to trusted:false — an untrusted ctx may neither read nor write a kernel pattern |
-| tier-2 | `agent-mcp` → `storage` | `applyKernelRules` | IMMUTABLE-registry totality | applies ON_CREATE/ON_WRITE/IMMUTABLE kernel hooks before the row lands — forged/immutable fields refused |
-| tier-2 | `agent-mcp` → `owner-trusted` | `findUngatedCredentialMints` | credential-mint gating totality | proves every secret-minting pattern's create is consent-gated — a misclassified patch_only minter fails the build |
-| tier-2 | `served-untrusted` → `public-egress` | `inertHeaders` | served-content inertness totality | stamps Content-Security-Policy: sandbox so agent-authored egress can't execute as first-party script |
-| tier-2 | `agent-mcp` → `storage` | `mintSecrets` | egress-sensitivity totality (via SENSITIVE_COLUMNS) | generates secret columns as a digest BEFORE insert — a read yields a hash, never a usable bearer |
-| tier-2 | `storage` → `public-egress` | `sealAll` | egress-sensitivity totality (via SENSITIVE_COLUMNS) | strips SENSITIVE_COLUMNS from rows before they leave the DO (every served emission routes through it) |
-| tier-2 | `storage` → `public-egress` | `SENSITIVE_COLUMNS` | egress-sensitivity totality | declares secret/redact columns — born-hashed at mint and stripped by seal on every outward emission |
-| tier-2 | `agent-mcp` → `storage` | `writeClass` | write-policy totality | resolves a pattern's write-class (User/System/Internal) — a System/Internal pattern is not agent-writable |
+`heat` is the share of recent commits that touched the file defining the chokepoint — where
+the map is being worked. It is a temperature, not a grade: it never affects `atlas --check`,
+and `—` means unmeasurable (no such symbol in the graph, or no history), never cold.
 
-**Tiers:** 8 enshrined · 7 totality-checked · 0 convention (15 crossings).
+| tier | from → to | chokepoint | oracle | re-establishes | heat |
+| --- | --- | --- | --- | --- | --- |
+| tier-2 | `agent-mcp` → `storage` | `applyKernelRules` | IMMUTABLE-registry totality | applies ON_CREATE/ON_WRITE/IMMUTABLE kernel hooks before the row lands — forged/immutable fields refused | ▇ 8% |
+| tier-2 | `public-egress` → `owner-trusted` | `currentHost` | instance-identity host resolution (via resolveHost) | returns WORKER_HOST and IGNORES the inbound Host — a spoofed Host can't poison an owner capability URL | ▂ 1% |
+| tier-2 | `public-egress` → `served-untrusted` | `denyUnlessBearerScope` | served bearer-gating totality | refuses an unlisted served read unless the request carries a bearer token whose scope matches | ▅ 5% |
+| tier-2 | `agent-mcp` → `owner-trusted` | `findUngatedCredentialMints` | credential-mint gating totality | proves every secret-minting pattern's create is consent-gated — a misclassified patch_only minter fails the build | ▇ 8% |
+| tier-2 | `served-untrusted` → `public-egress` | `inertHeaders` | served-content inertness totality | stamps Content-Security-Policy: sandbox so agent-authored egress can't execute as first-party script | ▆ 7% |
+| tier-2 | `owner-trusted` → `federated` | `isBlockedFederationHost` | SSRF block-host totality | blocks loopback/private/link-local/metadata hosts outright — they can't be allow-listed or token-leaked-to | ▇ 8% |
+| tier-2 | `agent-mcp` → `owner-trusted` | `isBroadTokenScope` | broad-token scope-grammar totality | recognizes broad token scopes so minting one is consent-gated — an agent can't silently mint '*' standing access | ▇ 8% |
+| tier-2 | `agent-mcp` → `storage` | `mintSecrets` | egress-sensitivity totality (via SENSITIVE_COLUMNS) | generates secret columns as a digest BEFORE insert — a read yields a hash, never a usable bearer | ▇ 8% |
+| tier-2 | `served-untrusted` → `owner-trusted` | `ownerDataCtx` | context-capability totality (via query) | raises trust to kernel-full — the sole trusted:true capability; structurally the only door up | █ 10% |
+| tier-2 | `served-untrusted` → `storage` | `query` | context-capability totality | refuses a kernel-pattern READ from an untrusted ctx (the symmetric read half of the trust flag) | █ 10% |
+| tier-2 | `agent-mcp` → `storage` | `quoteIdent` | quoteIdent — grammar | quotes a SQL identifier (pattern/column) before interpolation — beneath the kernel-column allow-lists | ▂ 1% |
+| tier-2 | `storage` → `public-egress` | `sealAll` | egress-sensitivity totality (via SENSITIVE_COLUMNS) | strips SENSITIVE_COLUMNS from rows before they leave the DO (every served emission routes through it) | ▇ 8% |
+| tier-2 | `storage` → `public-egress` | `SENSITIVE_COLUMNS` | egress-sensitivity totality | declares secret/redact columns — born-hashed at mint and stripped by seal on every outward emission | ▇ 8% |
+| tier-2 | `owner-trusted` → `served-untrusted` | `servedDataCtx` | context-capability totality (via query) | lowers to trusted:false — an untrusted ctx may neither read nor write a kernel pattern | █ 10% |
+| tier-2 | `agent-mcp` → `storage` | `writeClass` | write-policy totality | resolves a pattern's write-class (User/System/Internal) — a System/Internal pattern is not agent-writable | ▇ 8% |
+
+**Tiers:** 0 enshrined · 15 totality-checked · 0 convention (15 crossings).
 
 ### Headline
 

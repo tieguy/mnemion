@@ -6,6 +6,7 @@ The per-session McpAgent Durable Object that speaks the MCP protocol and proxies
 - tools SSOT totality
 
 ## works when
+- lives in agent-mcp
 - session.ts exists at this node
 - session.ts imports agents/mcp
 - tools.ts exists at this node

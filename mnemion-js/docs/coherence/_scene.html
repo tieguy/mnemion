@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mnemion-js — scene</title>
+<style>
+  :root{
+    --bg:#080b10; --panel:#0f151d; --line:#20303d; --ink:#c9d6e2; --dim:#7b8b99; --dimmer:#4d5b68;
+    --amber:#e6a83c; --amber-soft:#f2c169; --red:#ff453a; --warm:#ffd47a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);overflow-x:hidden}
+  body{
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; min-height:100vh;
+    /* atmosphere: a cold wash from above, a faint warm rise from below, nothing loud */
+    background:
+      radial-gradient(120% 80% at 50% -10%, #121c27 0%, rgba(18,28,39,0) 55%),
+      radial-gradient(140% 90% at 50% 118%, #171008 0%, rgba(23,16,8,0) 50%),
+      var(--bg);
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:0 14px 56px}
+  /* ── masthead ─────────────────────────────────────────────────── */
+  header.mh{
+    position:sticky;top:0;z-index:6;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;
+    padding:12px 16px;margin:0 -14px 4px;
+    background:linear-gradient(180deg,rgba(8,11,16,.96),rgba(8,11,16,.82));
+    border-bottom:1px solid var(--line);backdrop-filter:blur(6px);
+  }
+  .mh .root{font:600 15px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em}
+  .mh .intent{color:var(--dim);font-size:12.5px;max-width:56ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mh .facts{margin-left:auto;display:flex;gap:16px;align-items:baseline;font:11.5px ui-monospace,monospace;color:var(--dim);flex-wrap:wrap}
+  .mh .facts b{color:var(--ink);font-weight:600}
+  .mh .facts .k{color:var(--dimmer);text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;margin-right:5px}
+  .mh .fails.hot b{color:var(--red)}
+  /* ── stage ────────────────────────────────────────────────────── */
+  #stage{position:relative;margin-top:8px}
+  svg#scene{width:100%;height:auto;display:block;overflow:visible;user-select:none}
+  svg#scene .slab{cursor:pointer}
+  svg#scene .slab:hover .hilite{opacity:1}
+  .hilite{opacity:0;transition:opacity .12s}
+  @keyframes failpulse{0%,100%{opacity:.6}50%{opacity:1}}
+  .fdot{animation:failpulse 1.7s ease-in-out infinite}
+  /* ── tooltip ──────────────────────────────────────────────────── */
+  #tip{
+    position:fixed;pointer-events:none;z-index:20;max-width:280px;opacity:0;transform:translateY(3px);
+    transition:opacity .1s;padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(15,21,29,.97);box-shadow:0 12px 34px rgba(0,0,0,.55);font-size:12px;
+  }
+  #tip .t{font:600 13px ui-monospace,monospace;margin-bottom:3px}
+  #tip .r{color:var(--dim);display:flex;gap:8px;justify-content:space-between}
+  #tip .r b{color:var(--ink);font-weight:600}
+  #tip .lvl{font-size:11px;margin-top:4px}
+  /* ── pinned detail card ───────────────────────────────────────── */
+  #card{
+    position:fixed;top:64px;right:16px;z-index:15;width:340px;max-height:calc(100vh - 96px);
+    display:none;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:linear-gradient(180deg,#121924,#0d131b);box-shadow:0 22px 60px rgba(0,0,0,.6);
+  }
+  #card.on{display:flex}
+  #card .hd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:8px}
+  #card .hd .ct{font:600 14px ui-monospace,monospace}
+  #card .hd .ci{color:var(--dim);font-size:12px;margin-top:2px}
+  #card .x{margin-left:auto;color:var(--dim);cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13px}
+  #card .x:hover{color:var(--ink);border-color:var(--dim)}
+  #card .bd{padding:10px 14px 16px;overflow-y:auto;font-size:12.5px}
+  #card h4{font:600 9.5px system-ui;text-transform:uppercase;letter-spacing:.1em;color:var(--dimmer);margin:14px 0 6px}
+  #card h4:first-child{margin-top:2px}
+  #card .stat{display:flex;gap:14px;color:var(--dim);font:12px ui-monospace,monospace}
+  #card .stat b{color:var(--ink)}
+  .gate{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;padding:7px 0;border-top:1px solid rgba(255,255,255,.05)}
+  .gate:first-of-type{border-top:0}
+  .gate .m{font:600 10px system-ui;text-transform:uppercase;letter-spacing:.06em;align-self:start;padding:1px 6px;border-radius:5px;border:1px solid}
+  .gate .m.steel{color:#b8c4d0;border-color:#44525f}
+  .gate .m.scaffold{color:var(--amber);border-color:#5a4a24}
+  .gate .m.breached{color:var(--red);border-color:#5e2622;background:rgba(255,69,58,.08)}
+  .gate .inv{font:600 12.5px ui-monospace,monospace;color:var(--ink)}
+  .gate .flow{grid-column:2;color:var(--dim);font:11px ui-monospace,monospace}
+  .gate .flow .arw{color:var(--dimmer)}
+  .gate .flow .vd.pass{color:#5fbf7a}.gate .flow .vd.fail{color:var(--red)}.gate .flow .vd.stale{color:var(--amber)}.gate .flow .vd.unknown{color:var(--dimmer)}
+  .gate .eye{color:var(--amber);font-size:11px}
+  .redlist li{color:var(--red);font:12px ui-monospace,monospace;list-style:none}
+  .redlist{margin:0;padding:0}
+  .samp{color:var(--dim);font:11.5px ui-monospace,monospace;word-break:break-all;line-height:1.7}
+  .samp span{border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:0 5px;margin:0 3px 3px 0;display:inline-block}
+  .why{color:#aeb9c4;font:12.5px/1.55 system-ui;white-space:pre-wrap;border-left:2px solid #5a4a24;padding-left:10px}
+  .why.empty{color:var(--dimmer);font-style:italic;border-color:var(--dimmer)}
+  /* ── legend ───────────────────────────────────────────────────── */
+  #legend{
+    position:fixed;left:16px;bottom:16px;z-index:12;width:230px;
+    border:1px solid var(--line);border-radius:10px;background:rgba(13,19,27,.94);overflow:hidden;
+  }
+  #legend summary{list-style:none;cursor:pointer;padding:8px 11px;font:600 10.5px system-ui;text-transform:uppercase;letter-spacing:.09em;color:var(--dim)}
+  #legend summary::-webkit-details-marker{display:none}
+  #legend summary::after{content:"+";float:right;color:var(--dimmer)}
+  #legend[open] summary::after{content:"\2212"}
+  #legend .lb{padding:0 11px 11px;font-size:11px;color:var(--dim)}
+  #legend .row{display:flex;align-items:center;gap:8px;margin:6px 0}
+  #legend .sw{width:16px;height:12px;border-radius:2px;flex:none;border:1px solid rgba(255,255,255,.1)}
+  footer{color:var(--dimmer);font-size:11px;padding:22px 16px 0;font-family:ui-monospace,monospace}
+</style></head>
+<body>
+<div class="wrap">
+  <header class="mh">
+    <span class="root">mnemion-js</span>
+    <span class="intent">Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.</span>
+    <span class="facts">
+      <span class="fact"><span class="k">head</span><b>8dbad71*</b></span>
+      <span class="fact"><span class="k">fast</span><b data-age="2026-07-11T01:21:12.222Z">—</b></span>
+      <span class="fact"><span class="k">full</span><b data-age="">—</b></span>
+      <span class="fact fails"><span class="k">fails</span><b>0</b></span>
+    </span>
+  </header>
+  <div id="stage">
+    <svg id="scene" role="img" aria-label="isometric field of mnemion-js"></svg>
+  </div>
+  <footer>Generated at <span id="stamp">2026-07-11 04:05Z</span> — do not edit; run the harness.</footer>
+</div>
+
+<div id="tip" aria-hidden="true"></div>
+<aside id="card" aria-live="polite"></aside>
+<details id="legend">
+  <summary>legend</summary>
+  <div class="lb">
+    <div class="row"><span class="sw" style="background:#ffd47a"></span>warm bright — verified fresh</div>
+    <div class="row"><span class="sw" style="background:#3e5066"></span>cold faint — passes exist, stale</div>
+    <div class="row"><span class="sw" style="background:#232b34"></span>near-dark — nothing verified</div>
+    <div class="row"><span class="sw" style="border:1px dashed #e6a83c;background:transparent"></span>amber dashed — the claimed envelope</div>
+    <div class="row"><span class="sw" style="background:#12181f"></span>outside the amber — unclaimed mass</div>
+    <div class="row"><span class="sw" style="background:radial-gradient(circle at 50% 50%,#ff453a 0 30%,transparent 32%)"></span>red dot — failing claim</div>
+    <div class="row"><span class="sw" style="background:linear-gradient(0deg,transparent 44%,#ff453a 44% 56%,transparent 56%)"></span>red tick on outline — unanchored</div>
+    <div class="row"><span class="sw" style="background:linear-gradient(0deg,transparent 38%,#9aa7b4 38% 62%,transparent 62%)"></span>heavy notch — steel gate</div>
+    <div class="row"><span class="sw" style="background:repeating-linear-gradient(90deg,#c8d1da 0 3px,transparent 3px 6px)"></span>dashed notch — scaffold gate</div>
+    <div class="row"><span class="sw" style="background:linear-gradient(45deg,transparent 40%,#ff453a 40% 60%,transparent 60%)"></span>jagged red — breached gate</div>
+    <div class="row"><span style="color:#e6a83c">⚑</span>needs a human eye</div>
+  </div>
+</details>
+
+<script id="scene-data" type="application/json">{"root":"mnemion-js","intent":"Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.","generatedAt":"2026-07-11T04:05:19.072Z","head":"8dbad71","dirty":true,"grid":{"cols":3,"rows":3},"components":[{"label":"Mnemion","dir":".","intent":"Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.","why":"The worker entry keeps the entire HTTP surface as one scannable declarative route table (method, pattern, auth gate, handler per line) so the system's shape is graspable from the declarations alone, per the \"code as schematic\" principle. OAuthProvider wraps the worker to own the OAuth 2.1 / DCR / token flow and intercept `/mcp`, `/token`, `/register` before dispatch, so the rest of the code never re-implements auth plumbing.","lot":{"x":0,"y":0},"mass":{"files":5,"symbols":13},"claimed":{"files":1,"symbols":0},"unclaimedSample":["vite.fragment.ts","vite.preview.ts","vite.web.ts","store.ts","Entry","ensure()","rebuild()","notifyEntry()","load()","has()","patchEntry()","applyDelta()"],"gates":[],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:21:12.222Z"},"heat":0.45454545454545453,"links":["entities/Hive","entities/Session","entities/features","shared/Routing","shared/core"]},{"label":"Hive","dir":"entities/Hive","intent":"The single per-user Durable Object that owns all SQLite data and funnels every agent write through one kernel-enforced chokepoint.","why":"HiveDO is the single Durable Object that owns the SQLite store; every write funnels through its `mutate`/`batchMutate`/`processInput`/`consumeUpload` chokepoints so the kernel-write boundary is enforced in one place instead of re-derived per call site. `policy.ts` is the dependency-free leaf SSOT for \"which patterns agents can write, through which path, what gate fires\" — unclassified kernel patterns fail CLOSED (System → denied), so a new pattern can never silently become agent-writable, and kernel/prime/ingress gates all derive from it so the boundary can't drift between layers.\n\n(The per-boundary paragraphs below record the non-derivable rationale — the bug or rejected alternative each boundary exists to kill. The mechanism — chokepoint, oracle, \"iterates the live domain → fails the build\" — is carried by the `## invariants` list and the `boundary \"…\" at \u003cchokepoint> via test \"\u003coracle>\"` claims above, and isn't restated here.)\n\n**facet/kernel-column collision.** Kernel COLUMNS get the same single-source treatment as kernel patterns: `kernel-columns.ts` is the SSOT for the seven auto-provided columns, and every named slice (the data engine's create-exclude/facet-skip sets, schema display, history-diff ignore set) is DERIVED from it. A user-proposed facet may not collide with a kernel column, so `validateFacets` reserves `FACET_RESERVED_COLUMNS` — the kernel columns MINUS the user-overridable ones. The one overridable column is `version` (a pattern may declare its own semver semantics; create_pattern's apply skips the kernel default). The historical bug was a hand-narrowed reserved subset that wrongly omitted `created_by`/`updated_by` (a same-named facet is a duplicate-column DDL error — they MUST be reserved); over-correcting to reserve `version` then broke the user-version feature. Splitting \"overridable\" into its own declaration fixes both directions at once: `reserved ∪ overridable = KERNEL_COLUMNS`, so neither under- nor over-reserving can recur.\n\n**data-is-destiny no-hybrid.** Makes the \"store truth once, derive its consequences\" doctrine emergent from the schema rather than prose an agent can interpret away. The doctrine is semantic in general, but it has a DECIDABLE core: a pattern must not STORE an aggregate of rows it also RETAINS. `findStoredDerivedAggregates` checks exactly that, firing only when BOTH halves are present (an aggregate-named facet AND a child pattern referencing this one). It stays silent on the legitimate fork a convergence experiment surfaced — a bare counter with no retained instances IS the stored truth, not a denormalization, because there's no retained source to derive from. Boot warns rather than throws: a deliberate materialized aggregate is a valid reviewed override.\n\n**credential-mint gating.** The consent dual of egress totality. A pattern with a `secret` column mints a born-hashed BEARER on every create, so that create MUST be consent-gated. `patch_only` is provably wrong for such a pattern — it declares create benign while create is the dangerous op — and that was a real shipped bug: `_access_tokens` was `patch_only`, so an injected agent could mint a broad `*` token (a full owner login credential, redeemable at `/auth/verify`) in one un-round-tripped `mutate` and exfiltrate it. Fixed by `on_broad_token`: minting a broad/portable scope (`*`, or a whole-class `read`/`write` key — `isBroadTokenScope`) round-trips like every other standing grant, while narrow target-bound (`upload`/`document`) and inert (`register`, gated by `/invite` passkey approval) scopes stay benign so the frequent legit flows aren't taxed. The rule DERIVES from `SENSITIVE_COLUMNS × KERNEL_WRITE_POLICY` (no new declaration), so re-classifying a credential-minter as `patch_only`/`Open` is unexpressible.\n\n**born-hashed secrets.** The storage dual: credential-mint gating governs WHEN a bearer is minted; this governs HOW it's stored. `mintSecrets` is generic over `SENSITIVE_COLUMNS` and runs on every engine write path, so a `secret`-classed column is born-hashed by construction — the preimage is system-generated, returned ONCE in the create response, and only its SHA-256 digest lands in the column, the audit log, and the `/ws` delta. A read (owner or otherwise) yields a digest, never a usable bearer. The structural enforcement (generic `mintSecrets` keyed on the registry) makes this automatic for any declared secret column.\n\n**immutable-field enforcement.** The registry dual of the create-time hooks: where `ON_CREATE` decides what a kernel row may be BORN as, `IMMUTABLE` / `IMMUTABLE_AFTER_CREATE` decide what it may never BECOME — the defense-in-depth behind the consent model. `approved_at`/`consumed_at` are `IMMUTABLE` so an agent can't self-approve its own invite or replay a single-use token; a token's `scope`/`member`/`constraints`/`token` and an ingress endpoint's `target_pattern` are `IMMUTABLE_AFTER_CREATE` so a row that passed create-time validation can't be silently repointed to a stronger capability; `_members.label` is frozen-after-create (NOT `IMMUTABLE`, which would reject it at birth) because it's the stable handle passkeys/tokens/attribution reference. Enforcement has two faces because the patch path edits one facet by name and sidesteps the top-level key scan: `applyKernelRules` covers create/update/unarchive, `immutableFieldError` covers patch. (`scopeMatches`, the `:`-boundary prefix grammar these freezes protect, is pinned by its own matrix test — a fixed-grammar correctness property, not a live-domain totality, so it's verified but not a boundary.)\n\n**instance-identity host.** Closes the last unmanaged crossing the trust atlas surfaced (public-egress → owner-trusted): the host every generated capability URL is built from. A configured `WORKER_HOST` is AUTHORITATIVE and the inbound `Host` is IGNORED, so an attacker who plants a spoofed `Host` on an unauthenticated request (e.g. a `/ws` upgrade) can't poison an `upload_url`/`page_url`/`og_image` handed to the owner. This was enforced by `currentHost` but proven only by convention (the detector and atlas both flagged it tier-3). The decision is now the pure `resolveHost` (configured-wins-else-observed-else-localhost, placeholder treated as unconfigured), which `currentHost` delegates to — so the test IS the boundary. With this the manifold has zero tier-3 security crossings.\n\n**sql-identifier quoting.** The structural enshrinement of an injection boundary that was a convention. The SQL-identifier crossing (a raw string becoming a table/column token) was guarded by \"validate, then interpolate `\"${x}\"`\" at scattered sites — two SEPARATE steps a new site can forget. `quoteIdent` fuses them: it validates against `IDENTIFIER_RE` and returns the double-quoted identifier, throwing on any injection-bearing name — so an identifier that skipped the upstream semantic check still can't carry injection. The query engine (~20 sites in `data.ts`) routes every identifier through it; the semantic checks (`facetMeta`/`isValidColumn`/`patternExists`) stay as the primary gate with `quoteIdent` as fail-closed defense beneath. This moved the boundary from tier-3 to tier-1. (DDL interpolation in `schema.ts`/`evolution.ts` is the tracked follow-up; the coarse `injection-lint` ratchet still covers those + the HTML egress sinks until they're enshrined too.)\n\n**token-scope-grammar.** The classifier dual of credential-mint gating: that boundary decides a credential-minting create must be consent-gated; this decides WHICH scopes are \"broad\" enough to require the round-trip — so the partition `isBroadTokenScope` draws over the scope grammar IS the boundary. It drifted: a bare `parts.length >= 3` cutoff classified `read:entry:\u003cpattern>` (3 parts) as narrow, but `scopeMatches` prefix-grants it every `read:entry:\u003cpattern>:\u003cid>` — a pattern-WIDE standing read key minted with NO round-trip, an exfil credential. The fix classifies by RESOURCE GRAMMAR, not length: a scope is narrow only when it reaches its kind's LEAF depth (`entry` at depth 4 — `pattern:id`; `output`/`publication`/`document`/`input` at depth 3), so `read:entry:\u003cpattern>` falls short and is broad. The oracle reconciles the partition against both `scopeMatches` and the kinds `io.ts` actually mints, so a new served resource kind can't leave it incomplete.\n\n**kernel write boundary — two transports.** The kernel write boundary reaches the engine over TWO transports: the interactive MCP `mutate` tool and the browser-authenticated `/api/mutate`. The rejected design had gating decisions inlined in the MCP handler; the drift vector was real — an `/api`+RPC test passing while the MCP Zod/consent layer silently broke, so the boundary's enforcement disagreed across the two paths a write can take. Pure decisions in one tested leaf (shared by both transports) is the fix. (Interactive consent round-trip mechanics stay in the session handler because only MCP can satisfy them; `/api` is owner-implicit — a logged-in human IS the consent.)\n\n**kernel read+write capability.** Reads share the SAME boundary on the SAME flag: `DataContext.trusted` is required and gates kernel access symmetrically — an untrusted context may neither write nor read a kernel pattern. Trust is a CAPABILITY, not a per-call-site convention: `HiveDO` exposes two named constructors over a trust-agnostic `ctxFields` — `ownerDataCtx` (the ONLY `trusted: true`) and `servedDataCtx` (`trusted: false`) — with no trust parameter to dial at a call site, so served reads (public page, OG card, publication, `/o/entry`) AND untrusted writes (ingress, upload) physically cannot reach kernel data. All served public reads live in one module (`served.ts`), handed a narrow `ServedContext` exposing only `servedQuery` for user-pattern data plus single-answer kernel-CONFIG lookups (a `_shared` visibility, an endpoint config row, supersession ids, facet metadata) — never `db`, never a trusted context, no way to construct one. This made the old per-block / per-entry `isKernelPattern` guards provably redundant (a kernel-named read returns empty through `servedQuery`, which also binds the id against injection); they were deleted, leaving one chokepoint instead of a guard to forget per sink — replacing a block-list that failed open.\n\n**egress-sensitivity totality.** The bug it kills was a FALSE oracle. Write policy and sensitive columns were composed from two parallel hand-lists, and the second silently omitted a feature (`pages`); the egress side had no totality check at all, so a forked feature that declared a `redact`/`secret` column but forgot the second barrel line got no `seal`/audit/export redaction with no boot warning. Two parallel hand-lists was the rejected design. `findUnclassifiedSensitiveColumns` is honestly demoted to a complementary NAME heuristic — it can't see a sensitive column with an innocuous name, so it isn't full totality.\n\n**pattern-effects totality.** Post-mutate side effects (re-embed, cache invalidate, broadcast, …) were a hand-coded if-pile in `mutate()`: a feature adding a pattern that needed an effect had to remember to extend the if-tree, and a forgotten extension silently no-op'd at runtime. \"Remember to add another branch\" was the rejected design. Composing the effect set CORE + per-feature from the live `FEATURES` array, with the oracle asserting every effect-bearing pattern is represented, turns a missing entry into a build failure instead of a silent missing side effect — same shape as the write-policy and egress-sensitivity totalities (the three together are the feature-composition trio).\n\n(Federation is not yet a declared invariant on its own — the SSRF block-host coverage above is what's formalized as a boundary; the rest is design rationale living co-located in `federation.ts` until a totality oracle is written for it. The shape: token-send and allow-list consent share a single function (`federatedResolve`) so the approved host and the contacted host can never drift apart, re-validated on every redirect hop; splitting gate from fetch across modules or call sites would let a future edit move one without the other. The narrow `FederationContext` capability the DO hands the module ensures federation can read nothing else. This is the security analysis's \"condition #2\" — a candidate invariant if a co-location oracle is added.)\n\n**SSRF block-host coverage.** The totality dual of that SSRF guard. `isBlockedFederationHost` must refuse every class of non-public target — loopback/private/CGNAT/link-local IPv4 in every inet_aton encoding (dotted-decimal, octal, hex, integer), the IPv6 loopback/ULA/link-local/mapped/NAT64/6to4 forms, and the `.localhost`/`.local`/`.internal`/`.lan` suffixes — and a dropped category is a silent SSRF reopening (the canonical target is the cloud-metadata IP `169.254.169.254`). Its correctness was a convention (\"remember every encoding\") with no completeness check; the oracle's category→example table makes a new bypass class fail the build by name.","lot":{"x":1,"y":0},"mass":{"files":18,"symbols":248},"claimed":{"files":13,"symbols":10},"unclaimedSample":["completion.ts","constraints.ts","kernel.ts","labels.ts","transform.ts","MetricContext","Condition","COMPLETION_METRICS","COMPLETION_METRIC_KEYS","ConditionProgress","CompletionProgress","CompletionSpec"],"gates":[{"inv":"kernel write boundary","chokepoint":"writeClass","verb":"test","oracle":"write-policy totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"kernel read+write capability","chokepoint":"query","verb":"guard","oracle":"context-capability totality","material":"scaffold","verdict":"unknown","humanEye":true},{"inv":"egress-sensitivity totality","chokepoint":"SENSITIVE_COLUMNS","verb":"test","oracle":"egress-sensitivity totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"pattern-effects totality","chokepoint":"PATTERN_EFFECTS","verb":"test","oracle":"pattern-effects totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"facet/kernel-column collision","chokepoint":"FACET_RESERVED_COLUMNS","verb":"test","oracle":"facet-kernel-collision totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"data-is-destiny no-hybrid","chokepoint":"findStoredDerivedAggregates","verb":"test","oracle":"data-is-destiny no-hybrid totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"credential-mint gating","chokepoint":"findUngatedCredentialMints","verb":"test","oracle":"credential-mint gating totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"born-hashed secrets","chokepoint":"SENSITIVE_COLUMNS","verb":"test","oracle":"born-hashed-secret totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"immutable-field enforcement","chokepoint":"applyKernelRules","verb":"test","oracle":"IMMUTABLE-registry totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"token-scope-grammar","chokepoint":"isBroadTokenScope","verb":"guard","oracle":"broad-token scope-grammar totality","material":"scaffold","verdict":"unknown","humanEye":true},{"inv":"SSRF block-host coverage","chokepoint":"isBlockedFederationHost","verb":"guard","oracle":"SSRF block-host totality","material":"scaffold","verdict":"unknown","humanEye":true},{"inv":"sql-identifier quoting","chokepoint":"quoteIdent","verb":"guard","oracle":"quoteIdent — grammar","material":"scaffold","verdict":"unknown","humanEye":true},{"inv":"instance-identity host","chokepoint":"resolveHost","verb":"guard","oracle":"instance-identity host resolution","material":"scaffold","verdict":"unknown","humanEye":true}],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:21:12.222Z"},"heat":1,"links":["entities/Session","entities/features","shared/Auth","shared/IO","shared/core"]},{"label":"Session","dir":"entities/Session","intent":"The per-session McpAgent Durable Object that speaks the MCP protocol and proxies tool calls to the hive over RPC.","why":"(SessionDO is one Durable Object per MCP session: it handles the MCP protocol — tools, resources, init instructions — and proxies to the single HiveDO over RPC, keeping protocol concerns out of the data substrate. It also stamps the authenticated actor onto writes from its OAuth props, so attribution is enforced at the protocol edge.)\n\n**tools SSOT totality.** Tool metadata feeds two consumers — the MCP `.tool(`/`.registerTool(` registrations and the `/api/tools` frontend — and the rejected design was \"two parallel hand-lists, keep them in sync.\" The real failure shipped when `render` was registered inline without a corresponding `TOOLS` row: a live MCP tool invisible to `/api/tools`, visible to one consumer and not the other, with no warning anywhere. A tool present in one place and absent from the other is what the boundary makes unrepresentable.","lot":{"x":1,"y":1},"mass":{"files":2,"symbols":7},"claimed":{"files":2,"symbols":1},"unclaimedSample":["SessionDO","getHive()","notifyScratch()","emitScratch()","init()","ToolMeta"],"gates":[{"inv":"tools SSOT totality","chokepoint":"TOOLS","verb":"test","oracle":"tools SSOT totality","material":"scaffold","verdict":"unknown","humanEye":false}],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:16:12.552Z"},"heat":0.14545454545454545,"links":["entities/Hive","shared/core"]},{"label":"Features","dir":"entities/features","intent":"Per-feature manifests that FEED the scattered registries from one declaration; composers derive each registry from the `FEATURES` array.","why":"A \"feature\" is the extensibility keystone, and today its footprint is smeared\nacross registries a forker's agent must find and edit in lockstep: post-mutate\neffects (`entities/Hive/effects.ts`), HTTP routes (`src/index.ts`), MCP tools\n(`entities/Session/tools.ts`), kernel patterns + DDL (`entities/Hive/schema.ts`),\nwrite-policy class (`entities/Hive/policy.ts`), system docs, and the coherence\nspec. The `Feature` type collects all of those contributions into ONE\nco-located, typed declaration; the composers in `compose.ts` DERIVE each\nregistry from the hand-maintained `FEATURES` barrel (`index.ts`). Adding a\nfeature is then: create one dir + add one import line to the barrel — its whole\nfootprint legible in the manifest instead of scattered.\n\n`effects` was the first registry wired end-to-end; `routes` is the second:\n`PATTERN_EFFECTS` in `effects.ts` is `composeEffects(FEATURES)`, and the route\ntable in `src/index.ts` is `[...CORE_ROUTES, ...composeRoutes(FEATURES)]` rather\nthan one hand-written literal. The `documents` feature owns its `/f/*` upload +\nserve edges and the `pages` feature owns its `/page/*` serve + OG edges, declared\nin their manifests (handlers still imported from the I/O adapter layer,\n`shared/Routing/routes/io.ts` — the manifest declares the routing rows, not the\nhandler bodies). So a new side-effecting pattern, or a new HTTP edge for these\nfeatures, is a feature manifest — not another entry in a central map.\n\nRoute ORDER is load-bearing and preserved: the router matches in declaration\norder (first match wins), and feature routes are appended AFTER `CORE_ROUTES`, so\na feature route can never shadow a core route. The moved patterns (`/f/...`,\n`/page/...`) share no prefix with any retained core route (`/o/`, `/p/`,\n`/marketplace*`, etc.), so the move changes no match outcome — confirmed by the\nroute/document/page tests staying green. Each route's `backendPrefix` travels\nwith its declaration into `BACKEND_PREFIXES`, so a moved route's SPA-fallback\nexclusion is derived from the manifest, not re-hardcoded in `src/index.ts`.\n\nPatterns + migrations are the third and fourth registries wired end-to-end: each\nfeature owns its PATTERN STRUCTURE — the kernel-pattern DDL/facets/index and any\nfeature-specific schema migration — as PURE DATA in its dir\n(`\u003cname>/schema.ts`, type-only imports, no manifest code), and `schema.ts` builds\n`KERNEL_TABLES = [...CORE_KERNEL_TABLES, ...composePatterns(FEATURES)]` while its\nboot migration pile gains a tail loop over `composeMigrations(FEATURES)`. The\n`documents` feature owns the `_documents` table + its v12 extraction-columns\nmigration; the `pages` feature owns the `_pages` table + path index. The move is\nbyte-identical: every consumer of `KERNEL_TABLES` (the boot DDL loop, `_fields`\nseeding, the audit triggers, and crucially `verifyFieldsIntegrity` — the\nDDL↔`_fields` drift oracle — plus `verifyWritePolicyTotality`) reads the COMPOSED\narray, so a feature pattern is indistinguishable from a core one and an existing\nhive sees no schema diff at boot. The feature `schema.ts` files stay PURE DATA so\nthey share the leaf discipline of the `*/security.ts` siblings (the structure half\nof \"a feature owns its schema,\" beside the security half).\n\nThe kernel PRE-MUTATION HOOKS are the fifth registry, completing \"a feature owns its\nkernel pattern\": the `_documents` create validation (title required) + its\nsystem-managed immutable bookkeeping columns live in `documents/hooks.ts`, and the\n`_pages` write-time hook (URL-safe path + block-palette validation + the\nkernel-pattern exfil guard) lives in `pages/hooks.ts`. A feature declares these in\nits manifest's `hooks` slot; `kernel.ts` renames its hand-written literals to\n`CORE_ON_CREATE`/`CORE_ON_WRITE`/`CORE_IMMUTABLE` and derives the EXPORTED\n`ON_CREATE`/`ON_WRITE`/`IMMUTABLE` as `mergeDisjoint(CORE_*, compose*(FEATURES))`.\nENFORCEMENT does NOT move — `applyKernelRules` (the one chokepoint every mutate runs\nthrough) reads the EXPORTED composed maps, so the validation fires byte-for-byte as\nbefore (confirmed by the document title/immutability + page block-exfil tests staying\ngreen); only the DECLARATION moves into the feature dir, exactly as `effects` compose\ninto `PATTERN_EFFECTS` but fire at the mutate chokepoint. The hook bodies are code, so\n`\u003cdir>/hooks.ts` imports ONLY TYPES from `kernel.ts` (the hook signature types +\n`ImmutableRule` shape) — type imports are erased at runtime, so the `kernel.ts →\nFEATURES → manifest → hooks` back-edge is type-only and adds NO runtime cycle\n(`dpdm -T`, which strips type-only edges, shows the same single pre-existing runtime\ncycle before and after). `mergeDisjoint` mirrors policy.ts: a feature hook for a CORE\npattern throws at module load, so a feature can never silently override a core\ninvariant.\n\nComposition for `effects`/`tools`/`writePolicy`/`routes` runs at MODULE LOAD\n(static tables); `patterns`/`migrations`/`systemDocs` compose at BOOT (they touch\nthe DB). The composers fail LOUDLY on collision (two features over one pattern's\neffect, a duplicate migration version, a route/tool/pattern name clash) rather\nthan silently last-write-wins — a malformed manifest can't quietly shadow another\nfeature; a feature↔core pattern-name clash is caught by policy.ts's `mergeDisjoint`\nat module load. The fail-CLOSED write-policy default is preserved: a feature\npattern declared without a write-policy entry still resolves to System/denied,\nnever silently agent-writable. System docs stay a single source (`http-io.md`\nspans egress/publications/documents/ingress, so it isn't split per-feature); the\nremaining registries (`tools`, `systemDocs`) keep ONE source of truth each until\nthey adopt their composer (documented landing spots in `compose.ts`), so this\nmigration adds the seam without duplicating definitions.\n\n`clipboards` is the feature that EXTENDS THE CORE CHOKEPOINT. Unlike `documents`/\n`pages` (which add only effects/routes/their own pattern + hooks), a clipboard is a\nvalidated job-dispatch form: a `_clipboards` row binds a reusable, deterministically-\nvalidated form to a target dataset pattern, and every create/update on that pattern\nbecomes a SUBMISSION — validated collect-all (regex/range/length/cross-field/composite\nuniqueness) and scored against a composable numeric completion contract. The feature\nDIR owns only the declaration (the `_clipboards` pattern/schema, the fail-closed\nDEFINITION hook in `hooks.ts` that rejects an unknown constraint/metric/op, and the\n`Consent` write class — binding a contract to an existing shared dataset is an\ninjection-reachable write-availability lever, so creation takes a human round-trip like\n`_members`/`_shared`). The ENFORCEMENT is core: two generic LEAF engines\n(`entities/Hive/{constraints,completion}.ts` — `CONSTRAINT_RULES`/`COMPARISON_OPS` and\n`COMPLETION_METRICS`) configured by the `_clipboards` DATA, invoked at the ONE mutate\nchokepoint (`executeMutate`) via the `clipboardFor` seam on `DataContext`. So the\nchokepoint covers every write path — MCP mutate AND public ingress — and a fanout of\nagents all filling one clipboard is race-free (a single DO serializes the\nSELECT-then-INSERT, so composite-uniqueness dedupe holds and each submission's derived\nprogress is a consistent snapshot). The fail-closed knot is a double-entry TOTALITY\noracle: the constraint/metric/op keys the definition hook ACCEPTS must equal the keys\nthe engines ENFORCE — a rule that could be stored but silently isn't checked (fail-OPEN)\nfails the suite. Progress is DERIVED from the submission log every read (data-is-destiny:\n`count`/`sources_covered`/`days_since_last` are SQL aggregates, never stored counters).\n`patternClass` joined `KernelContext` so the definition hook can require a dataset-class\ntarget (guaranteeing the chokepoint's type coercion runs before numeric comparison).\n\n`scratchpad` is the pub/sub coordination feature: a `_scratchpad` row is a NOTE posted to\na named shared PAD, so agents in neighboring sessions on one hive can coordinate a fanout\n(claim/done/found) without polling. The DATA half is doctrine-standard — an `Open`,\n`auditExempt`, append-only kernel pattern (coordination chatter, not durable memory, so\nNOT `primeInclude` and GC'd at 30 days in the boot sweep, mirroring `_entry_access_log`)\nwith an `onCreate` hook validating the pad slug + kind. Reads are free: the\n`mnemion://scratchpad/{pad}` resource is an ordinary `query` (newest-first by pad), and\nagents can poll `query _scratchpad pad=X id>cursor` to catch up. The PUSH half (Phase 2)\nextends CORE — there is no HiveDO→SessionDO channel today, so a post fans out via an\neffect that RPCs each live session's `notifyScratch`, which must emit `sendResourceUpdated`\nfrom WITHIN the agents-framework agent context (a bare DO-to-DO RPC has none — confirmed\nby spike). `schedule()` is the supported in-context entrypoint, so the emit is a\nnear-immediate scheduled task. The session registry + the per-pad `resources/subscribe`\nhandlers are the new SessionDO↔HiveDO seam this feature owns.","lot":{"x":0,"y":1},"mass":{"files":17,"symbols":39},"claimed":{"files":17,"symbols":0},"unclaimedSample":["onWrite","_clipboards()","clipboards","patterns","writePolicy","composeEffects","composePatterns","composeMigrations","ComposeRoutesOptions","composeRoutes","assertWiredSlots","composeTools"],"gates":[],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:16:12.552Z"},"heat":0.2727272727272727,"links":["entities/Hive","shared/Routing","shared/core"]},{"label":"Auth","dir":"shared/Auth","intent":"Credential primitives — multi-member passkeys and scoped access/register tokens — isolated as pure db-accessor functions.","why":"Auth primitives (passkeys + access/register/auth tokens) are isolated as pure db-accessor functions so credential concerns stay separate from the cognitive substrate; the multi-row passkey model (one credential per member, NULL = bootstrap owner) exists because one shared hive is authenticated into by several people each acting as themselves. `resolveRegisterToken` deliberately re-validates scope/owner/roster at setup/consume time — independent of how the token's fields were set — because an adversarial review showed mint-time checks alone could be bypassed by a post-create constraints update to mount an owner-takeover, and a malformed member-less token must be unusable rather than defaulting to the owner sentinel.\n\nAccess tokens are stored HASHED at rest (`hashToken`, SHA-256): `findAccessToken` hashes the presented value and compares digests, mint stores only the digest (the raw token is shown once), and a boot migration hashes any legacy plaintext token in place. So a read of an `_access_tokens` row — a `query`, a `search` hit, a leaked DO snapshot — discloses only a digest, never a usable bearer. This is a deliberate exception to \"store truth once\": the secret's preimage is never persisted, which neuters the entire \"a token reached a read sink\" class independent of which sink leaks. Because the column holds a digest, every lookup that needs the token is async (`crypto.subtle.digest`), which is why these accessors return Promises.","lot":{"x":-1,"y":1},"mass":{"files":2,"symbols":23},"claimed":{"files":2,"symbols":0},"unclaimedSample":["StoredPasskeyRow","hasPasskey","getPasskeys","storePasskey","updatePasskeyCounter","hashToken","findAccessToken","consumeToken","validateAccessToken","resolveTokenActor","isMemberActive","getRegisterToken"],"gates":[],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:16:12.552Z"},"heat":0.05454545454545454,"links":["entities/Hive","shared/core"]},{"label":"IO","dir":"shared/IO","intent":"Outbound and inbound adapters: derived publication renderers, web-URL resolution with caching, git pack assembly, and text extraction.","why":"IO holds the adapters that move data across the hive's boundary, kept as focused single-purpose modules so each owns one concern. Publications render live pattern projections at request time (never stored) per the \"data is destiny\" doctrine; `web.ts` caches adapter-fetched content as durable memory with a re-fetch-horizon TTL and refuses blocked hosts; `extract.ts` splits inline text extraction from async PDF extraction off the response path because only the DO has `waitUntil`, capping extracted text to stay under the entry size limit.","lot":{"x":-1,"y":0},"mass":{"files":5,"symbols":23},"claimed":{"files":4,"symbols":0},"unclaimedSample":["og-png.ts","TEXT_CHARS_CAP","capText","isTextLike","isPdf","decodeText","extractPdfText","extractionPlan","FileTree","synthesizeRepo","handleInfoRefs","handleUploadPack"],"gates":[],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:16:12.552Z"},"heat":0.10909090909090909,"links":["entities/Hive","shared/Routing","shared/core"]},{"label":"Routing","dir":"shared/Routing","intent":"Declarative HTTP dispatch and session machinery: pattern-matched route table plus constant-time, revocable session auth helpers.","why":"(The router is the worker's declarative HTTP dispatch — method, pattern, auth gate, param constraints, matched in declaration order — with handlers grouped by domain under `routes/`, so the full routing surface stays scannable. Two auth primitives ride along that aren't yet declared invariants on their own: `timingSafeEqual` is constant-time to close a timing-attack finding on secret/token/signature checks, and session cookies carry a random sid plus a KV-stored epoch so every session can be revoked without rotating `MNEMION_SECRET`. Candidates for promotion when an oracle is added.)\n\n**Served-content inertness.** Agent- or uploader-authored content served on the FIRST-PARTY origin (which holds the owner's session cookie and can drive `/api/*`/`/mcp`) must never run as active script. The rejected design was a per-handler MIME block-list (\"any served path remembers to neutralize active MIME\") — correctly implemented at `/o` but silently drifted at two siblings: `/p` publications omitted the `sandbox` directive so owner-authored markup ran same-origin, and `/f` documents echoed the UPLOADER-controlled `Content-Type` inline with neither `nosniff` nor `sandbox`, turning a `text/html` upload into stored XSS / owner-session theft. A block-list of per-handler MIME handling fails open the moment one site forgets — the same failure mode that made it a convention crossing in the first place.\n\n**Served-read gating.** The auth dual of inertness: where inertness governs HOW served content is emitted, this governs WHETHER a visibility-gated resource is served at all. The rejected design was a 5-call-site block-list — \"any new served read route remembers to gate\" — that fails open the moment one route forgets, a real risk because adding a served read path is otherwise a cheap edit. A secretless deploy was an additional silent failure mode: with no master secret configured, owner-only APIs returned 503 but served reads still went through the bearer check against a NULL secret. Both failure modes are killed at one chokepoint with a fixed enumeration over the gated route-shape set. Anchored `via guard` rather than `via test` because the domain is a known route table, not a runtime-varying live domain.\n\n(Operational protection of the public surfaces is cost/availability, not a security boundary, so it isn't a declared invariant. Two layers, both fail-OPEN so absence is harmless: `rateLimit` over the GA `ratelimit` bindings caps the public WRITE surface per endpoint and the public READ surfaces per client IP, and `cached` wraps the public GET reads in `caches.default` so a hit returns from Cloudflare's per-colo edge without running the Worker or touching the DO. Together they answer the single-DO contention ceiling: hot public reads offload to the edge, and what reaches the DO — writes, cache misses, cache-busting enumeration — is throttled. Early `Content-Length` caps on the buffered text bodies bound Worker memory before the transform DSL runs.)","lot":{"x":-1,"y":-1},"mass":{"files":6,"symbols":59},"claimed":{"files":3,"symbols":2},"unclaimedSample":["dev.ts","marketplace.ts","pages.ts","Env","Method","Auth","RouteContext","RouteHandler","Route","timingSafeEqual","isDevAutoApprove","extractBasicPassword"],"gates":[{"inv":"served-content inertness","chokepoint":"inertHeaders","verb":"test","oracle":"served-content inertness totality","material":"scaffold","verdict":"unknown","humanEye":false},{"inv":"served-read gating","chokepoint":"denyUnlessBearerScope","verb":"guard","oracle":"served bearer-gating totality","material":"scaffold","verdict":"unknown","humanEye":true}],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:16:12.552Z"},"heat":0.4,"links":["entities/Hive","entities/Session","shared/IO","shared/core"]},{"label":"Core","dir":"shared/core","intent":"Cross-cutting primitives shared by both the worker and the SPA: product identity, the declarative UI palettes (view / format / block / chart) an agent authors against, and dev-only seed data.","why":"Core is the layer both runtimes depend on but neither owns, so it carries zero env-specific imports and stays pure data — that purity is what lets the same module validate a write in the worker and render it in the SPA without forking.\n\nIts center of gravity is the agent-authorable UI: `view-palette` (how a pattern renders), `format-palette` (how a value renders), `block-palette` (how a page composes), and the chart pair (`chart-spec` + `chart-svg`). These are the canonical instances of the \"self-enforcing declarations\" doctrine — one declarative table that is simultaneously the spec an agent reads, the validator the kernel derives (`validateViewSpec`/`validateBlocks`/`validateFormatsMap`, fail-closed at the mutate chokepoint), and the totality oracle the SPA's `Record\u003c…Id, Component>` enforces at compile time. The agent composes UI from these tables as data, never as code, which is what makes live agent-authored rework safe.\n\nThe chart layer is deliberately split so one spec drives two renderers: `chart-spec` is the single home for the mark set, the categorical color palette, and the long→wide series pivot, and both the in-hive Recharts renderer and the server SVG renderer (`chart-svg`, for published pages and OG cards) derive from it — so a dataset reads identically in-hive and on a public page. `constants` keeps product identity (`PRODUCT_NAME`, `URI_SCHEME`, `uri()`) in one place so the scheme is never hardcoded. `dev-seed` is gated and runs only in the DO constructor under `DEV_SEED`; it writes via raw SQL (trusted, bypassing the kernel hook), so its contents must stay valid against these same palettes by hand — it is inert in production.","lot":{"x":0,"y":-1},"mass":{"files":13,"symbols":73},"claimed":{"files":7,"symbols":0},"unclaimedSample":["env.d.ts","escape.ts","host.ts","log.ts","sql.ts","text.d.ts","BlockRole","BlockConfigKey","BlockType","BLOCK_PALETTE","BlockTypeId","BLOCK_TYPES"],"gates":[],"unanchored":[],"light":{"level":"lit","fails":0,"stale":0,"freshest":"2026-07-11T01:16:12.552Z"},"heat":0.4727272727272727,"links":["entities/Hive"]}],"verify":{"lastFastAt":"2026-07-11T01:21:12.222Z","failures":0}}</script>
+<script>
+(function(){
+  "use strict";
+  // The SVG namespace, assembled so the literal external-URL substring never appears in
+  // the document (the artifact must contain zero http(s):// — enforced by the tests).
+  var NS = "http" + "://www.w3.org/2000/svg";
+  var M = JSON.parse(document.getElementById("scene-data").textContent);
+  var svg = document.getElementById("scene");
+
+  // ── tiny helpers ───────────────────────────────────────────────
+  function el(tag, at, kids){
+    var e = document.createElementNS(NS, tag), k;
+    if(at) for(k in at){ if(at[k] != null) e.setAttribute(k, at[k]); }
+    if(kids) for(var i=0;i<kids.length;i++){ var c=kids[i]; if(c!=null) e.appendChild(typeof c==="string"?document.createTextNode(c):c); }
+    return e;
+  }
+  function pts(a){ var s=""; for(var i=0;i<a.length;i++){ s += (i?" ":"") + a[i].x.toFixed(1) + "," + a[i].y.toFixed(1); } return s; }
+  function lp(a,b,t){ return { x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t }; }
+
+  // ── isometric projection (pure function of grid coords) ─────────
+  // Low relief: slabs are thin extrusions (uniform E px for every component — the
+  // depth cue only); mass lives entirely in FOOTPRINT, so the scene stays flat.
+  var ISO=52, TH=ISO*0.5, E=7;
+  function proj(gx,gy,z){ return { x:(gx-gy)*ISO, y:(gx+gy)*TH - z }; }
+
+  // ── palette ─────────────────────────────────────────────────────
+  var C = {
+    tileEdge:"#141d27", tileFill:"rgba(255,255,255,.012)",
+    link:"#26333d",
+    amber:"#e6a83c", amberSoft:"#f2c169",
+    red:"#ff453a", steel:"#9aa7b4", scaffold:"#c8d1da",
+    unclaimed:"#12181f", unclaimedEdge:"#2a3038",
+    sideA:"#0d1319", sideB:"#10161e"
+  };
+  // the claimed surface is itself the lamp — no textures, luminance is the signal
+  var LAMP = { lit:"#ffd47a", dim:"#3e5066", dark:"#232b34" };
+  var LAMP_EDGE = { lit:"#b98f3f", dim:"#33414f", dark:"#252d36" };
+
+  function massOf(c){ return c.mass.files + c.mass.symbols; }
+  function claimedOf(c){ return c.claimed.files + c.claimed.symbols; }
+
+  // top-face AREA ∝ mass (sublinear): half-extent ∝ mass^0.25 ⇒ area ∝ sqrt(mass),
+  // so a 10× component reads ~3.2× the area — clearly bigger, never dominating.
+  // Normalised against the largest slab, whose half-extent stays under the fixed lot
+  // pitch (1 grid unit): sMax = 0.44 < 0.5, so slabs can never collide.
+  var mMax = 1;
+  for(var i=0;i<M.components.length;i++) mMax = Math.max(mMax, massOf(M.components[i]));
+  var S_MAX = 0.44, S_MIN = 0.14;
+  function halfExtent(c){
+    return Math.max(S_MIN, S_MAX * Math.pow(Math.max(1,massOf(c))/mMax, 0.25));
+  }
+  // claimed share as AREA: the inner diamond scales by sqrt(ratio), with floors so a
+  // real-but-tiny claim still shows and ANY unclaimed mass keeps a legible dark rim.
+  function claimedExtent(c, s){
+    var m = massOf(c), r = m>0 ? Math.min(1, claimedOf(c)/m) : 0;
+    if(r<=0) return 0;
+    var k = Math.sqrt(r);
+    if(r<1) k = Math.min(k, 0.92);
+    return Math.max(0.28, k) * s;
+  }
+
+  // diamond corners of the square footprint [x±s, y±s] at height z:
+  // returned in screen space as [back, east, front, west]
+  function diamond(x,y,s,z){ return [proj(x-s,y-s,z), proj(x+s,y-s,z), proj(x+s,y+s,z), proj(x-s,y+s,z)]; }
+
+  // ── build the scene ─────────────────────────────────────────────
+  var defs = el("defs");
+  defs.appendChild((function(){                       // soft bloom for lit surfaces + fail dots
+    var f=el("filter",{id:"bloom",x:"-60%",y:"-60%",width:"220%",height:"220%"});
+    f.appendChild(el("feGaussianBlur",{"in":"SourceGraphic",stdDeviation:"2",result:"b"}));
+    var mg=el("feMerge"); mg.appendChild(el("feMergeNode",{"in":"b"})); mg.appendChild(el("feMergeNode",{"in":"SourceGraphic"})); f.appendChild(mg); return f;
+  })());
+  var hg=el("radialGradient",{id:"heat",cx:"50%",cy:"50%",r:"50%"});
+  hg.appendChild(el("stop",{offset:"0%","stop-color":"#ff7a2f","stop-opacity":".7"}));
+  hg.appendChild(el("stop",{offset:"100%","stop-color":"#ff7a2f","stop-opacity":"0"})); defs.appendChild(hg);
+  svg.appendChild(defs);
+
+  var gFloor=el("g"), gLink=el("g"), gSlab=el("g");
+  svg.appendChild(gFloor); svg.appendChild(gLink); svg.appendChild(gSlab);
+
+  // bounds accumulator (viewBox is fit to content, then balanced to ~16:10 landscape)
+  var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  function seen(p){ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.y<minY)minY=p.y; if(p.y>maxY)maxY=p.y; }
+
+  // the field: a whisper-quiet lot grid — the *place* that holds still between runs
+  for(var gy=0; gy<M.grid.rows; gy++){
+    for(var gx=0; gx<M.grid.cols; gx++){
+      var d=diamond(gx,gy,0.5,0);
+      for(var q=0;q<4;q++) seen(d[q]);
+      gFloor.appendChild(el("polygon",{points:pts(d),fill:C.tileFill,stroke:C.tileEdge,"stroke-width":.6}));
+    }
+  }
+
+  // index components by dir so links resolve to lots
+  var byDir={}; for(var i=0;i<M.components.length;i++) byDir[M.components[i].dir]=i;
+
+  // links: thin dim straight lines slab-to-slab — adjacency context, nothing more
+  var drawn={};
+  for(var i=0;i<M.components.length;i++){
+    var c=M.components[i], a=proj(c.lot.x,c.lot.y,0);
+    for(var j=0;j<(c.links||[]).length;j++){
+      var t=byDir[c.links[j]]; if(t==null) continue;
+      var key=Math.min(i,t)+"-"+Math.max(i,t); if(drawn[key]) continue; drawn[key]=1;
+      var o=M.components[t], b=proj(o.lot.x,o.lot.y,0);
+      gLink.appendChild(el("line",{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:C.link,"stroke-width":1,opacity:.7}));
+    }
+  }
+
+  // paint slabs back-to-front (painter's algorithm on grid depth) so edges read right
+  var order=M.components.map(function(_,k){return k;}).sort(function(a,b){
+    var ca=M.components[a].lot, cb=M.components[b].lot;
+    return (ca.x+ca.y)-(cb.x+cb.y) || ca.x-cb.x;
+  });
+
+  for(var oi=0; oi<order.length; oi++){
+    var idx=order[oi], c=M.components[idx];
+    var Lx=c.lot.x, Ly=c.lot.y, s=halfExtent(c), si=claimedExtent(c,s), lvl=c.light.level;
+    var g=el("g",{"class":"slab","data-idx":idx});
+
+    // heat: soft radial underglow — churn pooling where work lands right now
+    if(c.heat>0){
+      var hc=proj(Lx,Ly,0), hr=ISO*(0.7+0.8*c.heat);
+      g.appendChild(el("ellipse",{cx:hc.x,cy:hc.y+2,rx:hr,ry:hr*0.5,fill:"url(#heat)",opacity:(0.1+0.5*c.heat).toFixed(3)}));
+    }
+
+    // the slab: a thin extrusion — two visible side faces for the depth cue, then the top
+    var T=diamond(Lx,Ly,s,E), B=diamond(Lx,Ly,s,0);   // [back, east, front, west]
+    g.appendChild(el("polygon",{points:pts([T[3],T[2],B[2],B[3]]),fill:C.sideA,stroke:C.unclaimedEdge,"stroke-width":.6})); // south face
+    g.appendChild(el("polygon",{points:pts([T[1],T[2],B[2],B[1]]),fill:C.sideB,stroke:C.unclaimedEdge,"stroke-width":.6})); // east face
+    // top face — the UNCLAIMED ground truth: everything outside the amber stays dark
+    g.appendChild(el("polygon",{points:pts(T),fill:C.unclaimed,stroke:C.unclaimedEdge,"stroke-width":.8}));
+
+    // the claimed region: a concentric inner diamond whose AREA is the claimed share,
+    // its surface luminance the verification state, enclosed by the dashed amber
+    // blueprint outline. THE SPEC MADE VISIBLE — the dark rim outside it is exactly
+    // the mass a prettier scene would have hidden.
+    var I=null;
+    if(si>0){
+      I=diamond(Lx,Ly,si,E);
+      g.appendChild(el("polygon",{points:pts(I),fill:LAMP[lvl]||LAMP.dark,stroke:LAMP_EDGE[lvl]||LAMP_EDGE.dark,"stroke-width":.6,
+        opacity:lvl==="lit"?".95":null, filter:lvl==="lit"?"url(#bloom)":null}));
+      g.appendChild(el("polygon",{points:pts(I),fill:"none",stroke:C.amber,"stroke-width":1.1,"stroke-dasharray":"5 3","stroke-linejoin":"round"}));
+    }
+    var outline = I || T;
+
+    // fails: small pulsing red dots ranged across the top face (capped; count in the card)
+    var failN=Math.min(c.light.fails,5);
+    for(var k=0;k<failN;k++){
+      var u=failN===1?0.5:k/(failN-1);
+      var fp=lp(lp(T[0],T[3],0.3), lp(T[1],T[2],0.3), u);   // a quiet row above centre
+      g.appendChild(el("circle",{"class":"fdot",cx:fp.x,cy:fp.y,r:2.6,fill:C.red,filter:"url(#bloom)"}));
+    }
+
+    // unanchored invariants: small red ticks crossing the blueprint outline (or the
+    // slab edge when nothing is claimed) — spec rules no gate anchors
+    var tickN=Math.min(c.unanchored.length,4);
+    for(var k=0;k<tickN;k++){
+      var tA=outline[0], tB=outline[1];                 // back→east edge of the outline
+      var tp=lp(tA,tB,0.25+0.5*(tickN===1?0.5:k/(tickN-1)));
+      var dx=tB.x-tA.x, dy=tB.y-tA.y, ln=Math.hypot(dx,dy)||1, nx=-dy/ln*4.5, ny=dx/ln*4.5;
+      g.appendChild(el("line",{x1:tp.x-nx,y1:tp.y-ny,x2:tp.x+nx,y2:tp.y+ny,stroke:C.red,"stroke-width":1.6,"stroke-linecap":"round"}));
+    }
+
+    // gates: notches along the slab's FRONT edge (west→front corner) — the enforcement
+    // ladder as pure line quality, no doors, no scaffolding props
+    var gates=c.gates||[], eA=T[3], eB=T[2];
+    var gdx=eB.x-eA.x, gdy=eB.y-eA.y, gln=Math.hypot(gdx,gdy)||1;
+    var gnx=-gdy/gln, gny=gdx/gln, gex=gdx/gln, gey=gdy/gln;
+    for(var k=0;k<gates.length;k++){
+      var gt=gates[k], gp=lp(eA,eB,(k+1)/(gates.length+1));
+      if(gt.material==="steel"){        // solid heavy stroke: an oracle holding green
+        g.appendChild(el("line",{x1:gp.x-gnx*6,y1:gp.y-gny*6,x2:gp.x+gnx*6,y2:gp.y+gny*6,stroke:C.steel,"stroke-width":3,"stroke-linecap":"round"}));
+      } else if(gt.material==="scaffold"){  // dashed light stroke: holding by memory
+        g.appendChild(el("line",{x1:gp.x-gnx*6,y1:gp.y-gny*6,x2:gp.x+gnx*6,y2:gp.y+gny*6,stroke:C.scaffold,"stroke-width":1.1,"stroke-dasharray":"2.5 2.5","stroke-linecap":"round"}));
+      } else {                          // breached: a jagged red break in the edge
+        var z=[{x:gp.x-gnx*6,y:gp.y-gny*6},{x:gp.x-gnx*2+gex*3,y:gp.y-gny*2+gey*3},{x:gp.x+gnx*2-gex*3,y:gp.y+gny*2-gey*3},{x:gp.x+gnx*6,y:gp.y+gny*6}];
+        g.appendChild(el("polyline",{points:pts(z),fill:"none",stroke:C.red,"stroke-width":1.8,"stroke-linejoin":"miter","stroke-linecap":"round"}));
+      }
+      if(gt.humanEye){                  // the meta-oracle never analysed it — flag it
+        var f=el("text",{x:gp.x+gnx*12,y:gp.y+gny*12+3,"text-anchor":"middle","font-size":"9",fill:C.amber});
+        f.textContent="\u2691"; g.appendChild(f);
+      }
+    }
+
+    // hover highlight: the slab's own outline warms — built once, toggled by CSS
+    g.appendChild(el("polygon",{"class":"hilite",points:pts(T),fill:"none",stroke:C.amberSoft,"stroke-width":1.3}));
+
+    gSlab.appendChild(g);
+    for(var q=0;q<4;q++){ seen(T[q]); seen(B[q]); }
+  }
+
+  // ── viewBox: fit to content, then balance to a ~16:10 landscape, centred ──
+  var padX=36, padY=30;
+  var vx=minX-padX, vy=minY-padY, vw=(maxX-minX)+padX*2, vh=(maxY-minY)+padY*2;
+  var AR=1.6;
+  if(vw/vh > AR){ var nh=vw/AR; vy -= (nh-vh)/2; vh=nh; }   // too wide → grow height, centred
+  else { var nw=vh*AR; vx -= (nw-vw)/2; vw=nw; }            // too tall → grow width, centred
+  svg.setAttribute("viewBox", vx.toFixed(1)+" "+vy.toFixed(1)+" "+vw.toFixed(1)+" "+vh.toFixed(1));
+
+  // ── masthead ages (computed at VIEW time, so a stale file honestly shows its age) ──
+  function age(iso){
+    if(!iso) return "never";
+    var s=Math.max(0,(Date.now()-new Date(iso).getTime())/1000);
+    if(s<90) return Math.round(s)+"s"; if(s<5400) return Math.round(s/60)+"m";
+    if(s<172800) return Math.round(s/3600)+"h"; return Math.round(s/86400)+"d";
+  }
+  var ageEls=document.querySelectorAll(".facts [data-age]");
+  for(var i=0;i<ageEls.length;i++) ageEls[i].textContent=age(ageEls[i].getAttribute("data-age"));
+
+  // ── interaction: hover tooltip · click pins a detail card · Esc unpins ──
+  var tip=document.getElementById("tip"), card=document.getElementById("card");
+  function pj(v){ return v.files+v.symbols; }
+  function E(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function tipHtml(c){
+    var lit=c.light.level, extra=(c.light.fails?(" · "+c.light.fails+" failing"):"")+(c.light.stale?(" · "+c.light.stale+" stale"):"");
+    return "<div class='t'>"+E(c.label)+"</div>"+
+      (c.intent?"<div class='r' style='color:var(--dim)'>"+E(c.intent)+"</div>":"")+
+      "<div class='r'><span>mass</span><b>"+pj(c.mass)+"</b></div>"+
+      "<div class='r'><span>claimed</span><b>"+pj(c.claimed)+" / "+pj(c.mass)+"</b></div>"+
+      "<div class='lvl' style='color:"+(lit==="lit"?"#ffd47a":lit==="dim"?"#8fb0d6":"#7b8b99")+"'>"+lit+extra+"</div>";
+  }
+  function cardHtml(c){
+    var gates=(c.gates||[]).map(function(gt){
+      return "<div class='gate'><span class='m "+gt.material+"'>"+E(gt.material)+"</span>"+
+        "<span class='inv'>"+E(gt.inv)+(gt.humanEye?" <span class='eye' title='needs a human eye'>⚑</span>":"")+"</span>"+
+        "<span class='flow'>"+E(gt.chokepoint)+" <span class='arw'>→</span> "+
+        (gt.verb?E(gt.verb):"no oracle")+(gt.oracle?" “"+E(gt.oracle)+"”":"")+
+        " <span class='arw'>→</span> <span class='vd "+gt.verdict+"'>"+E(gt.verdict)+"</span></span></div>";
+    }).join("") || "<div class='samp'>no boundary gates declared</div>";
+    var unanch=(c.unanchored||[]).length?"<h4>unanchored invariants</h4><ul class='redlist'>"+c.unanchored.map(function(u){return "<li>⚑ "+E(u)+"</li>";}).join("")+"</ul>":"";
+    var samp=(c.unclaimedSample||[]).length?"<h4>outside the blueprint</h4><div class='samp'>"+c.unclaimedSample.map(function(s){return "<span>"+E(s)+"</span>";}).join("")+"</div>":"";
+    var why=c.why?"<h4>why</h4><div class='why'>"+E(c.why)+"</div>":"<h4>why</h4><div class='why empty'>— no rationale authored (itself a visible gap)</div>";
+    return "<div class='hd'><div><div class='ct'>"+E(c.label)+"</div><div class='ci'>"+E(c.intent||"")+"</div></div><span class='x' role='button' title='close'>×</span></div>"+
+      "<div class='bd'><div class='stat'><span>mass <b>"+pj(c.mass)+"</b></span><span>claimed <b>"+pj(c.claimed)+"</b></span><span>light <b>"+E(c.light.level)+"</b></span><span>heat <b>"+Math.round(c.heat*100)+"%</b></span></div>"+
+      "<h4>gates</h4>"+gates+unanch+samp+why+"</div>";
+  }
+  function pin(idx){ card.innerHTML=cardHtml(M.components[idx]); card.classList.add("on"); }
+  function unpin(){ card.classList.remove("on"); }
+
+  svg.addEventListener("mousemove",function(e){
+    var b=e.target.closest?e.target.closest(".slab"):null;
+    if(!b){ tip.style.opacity=0; return; }
+    var c=M.components[+b.getAttribute("data-idx")];
+    tip.innerHTML=tipHtml(c); tip.style.opacity=1;
+    var x=e.clientX+16, y=e.clientY+16;
+    if(x>innerWidth-300) x=e.clientX-296;
+    tip.style.left=x+"px"; tip.style.top=y+"px";
+  });
+  svg.addEventListener("mouseleave",function(){ tip.style.opacity=0; });
+  svg.addEventListener("click",function(e){
+    var b=e.target.closest?e.target.closest(".slab"):null;
+    if(b) pin(+b.getAttribute("data-idx")); else unpin();
+  });
+  card.addEventListener("click",function(e){ if(e.target.classList.contains("x")) unpin(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ unpin(); tip.style.opacity=0; } });
+})();
+</script>
+</body></html>

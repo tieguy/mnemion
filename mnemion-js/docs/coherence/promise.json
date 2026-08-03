@@ -1,0 +1,536 @@
+{
+  "root": "mnemion-js",
+  "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
+  "generatedAt": "2026-08-03T14:41:54.872Z",
+  "head": "cf2d052",
+  "dirty": true,
+  "zones": [
+    {
+      "name": "owner-trusted",
+      "intent": "Full kernel access — the ownerDataCtx capability (the only trusted:true reader/writer).",
+      "inside": null
+    },
+    {
+      "name": "storage",
+      "intent": "The SQLite / R2 substrate beneath every chart.",
+      "inside": null
+    },
+    {
+      "name": "served-untrusted",
+      "intent": "Public reads + ingress/upload writes — the servedDataCtx capability (trusted:false).",
+      "inside": null
+    },
+    {
+      "name": "public-egress",
+      "intent": "Served HTTP responses (/o /p /f) and the /ws broadcast — leaves the DO in the clear.",
+      "inside": null
+    },
+    {
+      "name": "agent-mcp",
+      "intent": "The MCP tool surface — agent input, consent-gated, never trusted with the kernel.",
+      "inside": null
+    },
+    {
+      "name": "federated",
+      "intent": "Cross-hive resolve over the network — a sovereign foreign hive.",
+      "inside": null
+    }
+  ],
+  "components": [
+    {
+      "label": "Mnemion",
+      "dir": ".",
+      "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
+      "zone": null,
+      "gates": [],
+      "relies": [
+        {
+          "to": "entities/Hive",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "entities/Session",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "entities/features",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "shared/Routing",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "shared/core",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 5,
+        "lines": 417
+      },
+      "accounted": {
+        "files": 1,
+        "lines": 192
+      }
+    },
+    {
+      "label": "Hive",
+      "dir": "entities/Hive",
+      "intent": "The single per-user Durable Object that owns all SQLite data and funnels every agent write through one kernel-enforced chokepoint.",
+      "zone": "storage",
+      "gates": [
+        {
+          "inv": "kernel write boundary",
+          "chokepoint": "writeClass",
+          "verb": "test",
+          "oracle": "write-policy totality",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "storage"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": [
+            "entities/Session"
+          ]
+        },
+        {
+          "inv": "kernel read+write capability",
+          "chokepoint": "query",
+          "verb": "guard",
+          "oracle": "context-capability totality",
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "storage"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": [
+            "shared/Routing"
+          ]
+        },
+        {
+          "inv": "egress-sensitivity totality",
+          "chokepoint": "SENSITIVE_COLUMNS",
+          "verb": "test",
+          "oracle": "egress-sensitivity totality",
+          "crossing": {
+            "from": "storage",
+            "to": "public-egress"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": [
+            "entities/Hive"
+          ]
+        },
+        {
+          "inv": "pattern-effects totality",
+          "chokepoint": "PATTERN_EFFECTS",
+          "verb": "test",
+          "oracle": "pattern-effects totality",
+          "crossing": null,
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "facet/kernel-column collision",
+          "chokepoint": "FACET_RESERVED_COLUMNS",
+          "verb": "test",
+          "oracle": "facet-kernel-collision totality",
+          "crossing": null,
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "data-is-destiny no-hybrid",
+          "chokepoint": "findStoredDerivedAggregates",
+          "verb": "test",
+          "oracle": "data-is-destiny no-hybrid totality",
+          "crossing": null,
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "credential-mint gating",
+          "chokepoint": "findUngatedCredentialMints",
+          "verb": "test",
+          "oracle": "credential-mint gating totality",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "owner-trusted"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "born-hashed secrets",
+          "chokepoint": "SENSITIVE_COLUMNS",
+          "verb": "test",
+          "oracle": "born-hashed-secret totality",
+          "crossing": {
+            "from": "storage",
+            "to": "public-egress"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "immutable-field enforcement",
+          "chokepoint": "applyKernelRules",
+          "verb": "test",
+          "oracle": "IMMUTABLE-registry totality",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "storage"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "token-scope-grammar",
+          "chokepoint": "isBroadTokenScope",
+          "verb": "guard",
+          "oracle": "broad-token scope-grammar totality",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "owner-trusted"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "SSRF block-host coverage",
+          "chokepoint": "isBlockedFederationHost",
+          "verb": "guard",
+          "oracle": "SSRF block-host totality",
+          "crossing": {
+            "from": "owner-trusted",
+            "to": "federated"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "sql-identifier quoting",
+          "chokepoint": "quoteIdent",
+          "verb": "guard",
+          "oracle": "quoteIdent — grammar",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "storage"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        },
+        {
+          "inv": "instance-identity host",
+          "chokepoint": "resolveHost",
+          "verb": "guard",
+          "oracle": "instance-identity host resolution",
+          "crossing": {
+            "from": "public-egress",
+            "to": "owner-trusted"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        }
+      ],
+      "relies": [
+        {
+          "to": "entities/Session",
+          "crossing": {
+            "from": "storage",
+            "to": "agent-mcp"
+          },
+          "via": null
+        },
+        {
+          "to": "entities/features",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "shared/Auth",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "shared/IO",
+          "crossing": {
+            "from": "storage",
+            "to": "public-egress"
+          },
+          "via": "egress-sensitivity totality"
+        },
+        {
+          "to": "shared/core",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 18,
+        "lines": 7980
+      },
+      "accounted": {
+        "files": 13,
+        "lines": 6725
+      }
+    },
+    {
+      "label": "Session",
+      "dir": "entities/Session",
+      "intent": "The per-session McpAgent Durable Object that speaks the MCP protocol and proxies tool calls to the hive over RPC.",
+      "zone": "agent-mcp",
+      "gates": [
+        {
+          "inv": "tools SSOT totality",
+          "chokepoint": "TOOLS",
+          "verb": "test",
+          "oracle": "tools SSOT totality",
+          "crossing": null,
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": []
+        }
+      ],
+      "relies": [
+        {
+          "to": "entities/Hive",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "storage"
+          },
+          "via": "kernel write boundary"
+        },
+        {
+          "to": "shared/core",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 2,
+        "lines": 912
+      },
+      "accounted": {
+        "files": 2,
+        "lines": 912
+      }
+    },
+    {
+      "label": "Features",
+      "dir": "entities/features",
+      "intent": "Per-feature manifests that FEED the scattered registries from one declaration; composers derive each registry from the `FEATURES` array.",
+      "zone": null,
+      "gates": [],
+      "relies": [
+        {
+          "to": "entities/Hive",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "shared/Routing",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "shared/core",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 17,
+        "lines": 1238
+      },
+      "accounted": {
+        "files": 14,
+        "lines": 1089
+      }
+    },
+    {
+      "label": "Auth",
+      "dir": "shared/Auth",
+      "intent": "Credential primitives — multi-member passkeys and scoped access/register tokens — isolated as pure db-accessor functions.",
+      "zone": null,
+      "gates": [],
+      "relies": [
+        {
+          "to": "entities/Hive",
+          "crossing": null,
+          "via": null
+        },
+        {
+          "to": "shared/core",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 2,
+        "lines": 599
+      },
+      "accounted": {
+        "files": 2,
+        "lines": 599
+      }
+    },
+    {
+      "label": "IO",
+      "dir": "shared/IO",
+      "intent": "Outbound and inbound adapters: derived publication renderers, web-URL resolution with caching, git pack assembly, and text extraction.",
+      "zone": "public-egress",
+      "gates": [],
+      "relies": [
+        {
+          "to": "entities/Hive",
+          "crossing": {
+            "from": "public-egress",
+            "to": "storage"
+          },
+          "via": null
+        },
+        {
+          "to": "shared/Routing",
+          "crossing": {
+            "from": "public-egress",
+            "to": "served-untrusted"
+          },
+          "via": "served-read gating"
+        },
+        {
+          "to": "shared/core",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 5,
+        "lines": 1278
+      },
+      "accounted": {
+        "files": 4,
+        "lines": 1250
+      }
+    },
+    {
+      "label": "Routing",
+      "dir": "shared/Routing",
+      "intent": "Declarative HTTP dispatch and session machinery: pattern-matched route table plus constant-time, revocable session auth helpers.",
+      "zone": "served-untrusted",
+      "gates": [
+        {
+          "inv": "served-content inertness",
+          "chokepoint": "inertHeaders",
+          "verb": "test",
+          "oracle": "served-content inertness totality",
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "public-egress"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": [
+            "shared/Routing"
+          ]
+        },
+        {
+          "inv": "served-read gating",
+          "chokepoint": "denyUnlessBearerScope",
+          "verb": "guard",
+          "oracle": "served bearer-gating totality",
+          "crossing": {
+            "from": "public-egress",
+            "to": "served-untrusted"
+          },
+          "grade": "U",
+          "verdict": "unknown",
+          "reliants": [
+            "shared/IO"
+          ]
+        }
+      ],
+      "relies": [
+        {
+          "to": "entities/Hive",
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "storage"
+          },
+          "via": "kernel read+write capability"
+        },
+        {
+          "to": "entities/Session",
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "agent-mcp"
+          },
+          "via": null
+        },
+        {
+          "to": "shared/IO",
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "public-egress"
+          },
+          "via": "served-content inertness"
+        },
+        {
+          "to": "shared/core",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 6,
+        "lines": 2000
+      },
+      "accounted": {
+        "files": 3,
+        "lines": 1612
+      }
+    },
+    {
+      "label": "Core",
+      "dir": "shared/core",
+      "intent": "Cross-cutting primitives shared by both the worker and the SPA: product identity, the declarative UI palettes (view / format / block / chart) an agent authors against, and dev-only seed data.",
+      "zone": null,
+      "gates": [],
+      "relies": [
+        {
+          "to": "entities/Hive",
+          "crossing": null,
+          "via": null
+        }
+      ],
+      "mass": {
+        "files": 13,
+        "lines": 1474
+      },
+      "accounted": {
+        "files": 7,
+        "lines": 1291
+      }
+    }
+  ],
+  "review": null
+}

@@ -2,6 +2,14 @@
 
 Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.
 
+## zones
+- owner-trusted: Full kernel access — the ownerDataCtx capability (the only trusted:true reader/writer).
+- storage: The SQLite / R2 substrate beneath every chart.
+- served-untrusted: Public reads + ingress/upload writes — the servedDataCtx capability (trusted:false).
+- public-egress: Served HTTP responses (/o /p /f) and the /ws broadcast — leaves the DO in the clear.
+- agent-mcp: The MCP tool surface — agent input, consent-gated, never trusted with the kernel.
+- federated: Cross-hive resolve over the network — a sovereign foreign hive.
+
 ## works when
 - src/index.ts exists at root
 - wrangler.toml exists at root

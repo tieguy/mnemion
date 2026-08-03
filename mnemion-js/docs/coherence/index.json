@@ -1,0 +1,912 @@
+{
+  "project": "mnemion-js",
+  "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
+  "generatedAt": "2026-08-03 14:31Z",
+  "head": {
+    "commit": "8dbad71",
+    "dirty": true
+  },
+  "frame": {
+    "kind": "first",
+    "ref": null,
+    "commit": null,
+    "at": null,
+    "commits": null,
+    "why": "no prior index and no tags in this repository. A FIRST LOOK has no news by definition: everything below is the standing state, not a delta."
+  },
+  "sources": [
+    {
+      "name": "graph",
+      "ok": true,
+      "detail": "8 component(s), 116 claim(s), 68 file(s) derived from the spec tree"
+    },
+    {
+      "name": ".coherence/status.json — verify",
+      "ok": true,
+      "detail": "116 claim verdict(s), 0 failure(s), tier fast",
+      "at": "2026-08-03T14:14:20.214Z",
+      "commit": "8dbad71",
+      "stale": false
+    },
+    {
+      "name": ".coherence/status.json — atlas",
+      "ok": true,
+      "detail": "15 crossing(s) graded",
+      "at": "2026-07-11T01:16:19.352Z",
+      "commit": "8dbad71",
+      "stale": false
+    },
+    {
+      "name": "git history",
+      "ok": true,
+      "detail": "142 concern-carrying commit(s) in the last 200, touching 215 path(s)",
+      "commit": "8dbad71"
+    },
+    {
+      "name": ".coherence/decisions",
+      "ok": true,
+      "detail": "1 record(s) across 1 session(s)"
+    }
+  ],
+  "map": {
+    "components": [
+      {
+        "label": "Hive",
+        "dir": "entities/Hive",
+        "intent": "The single per-user Durable Object that owns all SQLite data and funnels every agent write through one kernel-enforced chokepoint.",
+        "zone": "storage",
+        "guards": [
+          "SENSITIVE_COLUMNS",
+          "applyKernelRules",
+          "findUngatedCredentialMints",
+          "isBlockedFederationHost",
+          "isBroadTokenScope",
+          "query",
+          "sealAll",
+          "writeClass"
+        ],
+        "files": 18,
+        "lines": 7980,
+        "accountedFiles": 13,
+        "claims": 38,
+        "gates": 13,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 13
+        },
+        "breaches": 0,
+        "invariants": 13,
+        "anchored": 13,
+        "witnessed": 0,
+        "symbols": 248,
+        "undocumented": 144,
+        "naked": 1
+      },
+      {
+        "label": "Routing",
+        "dir": "shared/Routing",
+        "intent": "Declarative HTTP dispatch and session machinery: pattern-matched route table plus constant-time, revocable session auth helpers.",
+        "zone": "served-untrusted",
+        "guards": [
+          "denyUnlessBearerScope",
+          "inertHeaders"
+        ],
+        "files": 6,
+        "lines": 2000,
+        "accountedFiles": 3,
+        "claims": 8,
+        "gates": 2,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 2
+        },
+        "breaches": 0,
+        "invariants": 2,
+        "anchored": 2,
+        "witnessed": 0,
+        "symbols": 59,
+        "undocumented": 46,
+        "naked": 1
+      },
+      {
+        "label": "Core",
+        "dir": "shared/core",
+        "intent": "Cross-cutting primitives shared by both the worker and the SPA: product identity, the declarative UI palettes (view / format / block / chart) an agent authors against, and dev-only seed data.",
+        "zone": null,
+        "guards": [
+          "quoteIdent"
+        ],
+        "files": 13,
+        "lines": 1474,
+        "accountedFiles": 7,
+        "claims": 9,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 73,
+        "undocumented": 40,
+        "naked": 0
+      },
+      {
+        "label": "Mnemion",
+        "dir": ".",
+        "intent": "Cloudflare Worker entry: an OAuth-wrapped MCP server whose one declarative route table is the whole HTTP surface.",
+        "zone": null,
+        "guards": [],
+        "files": 5,
+        "lines": 417,
+        "accountedFiles": 1,
+        "claims": 4,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 13,
+        "undocumented": 8,
+        "naked": 0
+      },
+      {
+        "label": "Session",
+        "dir": "entities/Session",
+        "intent": "The per-session McpAgent Durable Object that speaks the MCP protocol and proxies tool calls to the hive over RPC.",
+        "zone": "agent-mcp",
+        "guards": [],
+        "files": 2,
+        "lines": 912,
+        "accountedFiles": 2,
+        "claims": 6,
+        "gates": 1,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 1
+        },
+        "breaches": 0,
+        "invariants": 1,
+        "anchored": 1,
+        "witnessed": 0,
+        "symbols": 7,
+        "undocumented": 6,
+        "naked": 0
+      },
+      {
+        "label": "Features",
+        "dir": "entities/features",
+        "intent": "Per-feature manifests that FEED the scattered registries from one declaration; composers derive each registry from the `FEATURES` array.",
+        "zone": null,
+        "guards": [],
+        "files": 17,
+        "lines": 1238,
+        "accountedFiles": 14,
+        "claims": 43,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 39,
+        "undocumented": 21,
+        "naked": 0
+      },
+      {
+        "label": "Auth",
+        "dir": "shared/Auth",
+        "intent": "Credential primitives — multi-member passkeys and scoped access/register tokens — isolated as pure db-accessor functions.",
+        "zone": null,
+        "guards": [],
+        "files": 2,
+        "lines": 599,
+        "accountedFiles": 2,
+        "claims": 3,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 23,
+        "undocumented": 7,
+        "naked": 0
+      },
+      {
+        "label": "IO",
+        "dir": "shared/IO",
+        "intent": "Outbound and inbound adapters: derived publication renderers, web-URL resolution with caching, git pack assembly, and text extraction.",
+        "zone": "public-egress",
+        "guards": [],
+        "files": 5,
+        "lines": 1278,
+        "accountedFiles": 4,
+        "claims": 5,
+        "gates": 0,
+        "grades": {
+          "A": 0,
+          "B": 0,
+          "C": 0,
+          "D": 0,
+          "U": 0
+        },
+        "breaches": 0,
+        "invariants": 0,
+        "anchored": 0,
+        "witnessed": 0,
+        "symbols": 23,
+        "undocumented": 17,
+        "naked": 1
+      }
+    ],
+    "zones": [
+      {
+        "name": "owner-trusted",
+        "intent": "Full kernel access — the ownerDataCtx capability (the only trusted:true reader/writer).",
+        "inside": null
+      },
+      {
+        "name": "storage",
+        "intent": "The SQLite / R2 substrate beneath every chart.",
+        "inside": null
+      },
+      {
+        "name": "served-untrusted",
+        "intent": "Public reads + ingress/upload writes — the servedDataCtx capability (trusted:false).",
+        "inside": null
+      },
+      {
+        "name": "public-egress",
+        "intent": "Served HTTP responses (/o /p /f) and the /ws broadcast — leaves the DO in the clear.",
+        "inside": null
+      },
+      {
+        "name": "agent-mcp",
+        "intent": "The MCP tool surface — agent input, consent-gated, never trusted with the kernel.",
+        "inside": null
+      },
+      {
+        "name": "federated",
+        "intent": "Cross-hive resolve over the network — a sovereign foreign hive.",
+        "inside": null
+      }
+    ],
+    "gates": {
+      "shown": [
+        {
+          "comp": "Hive",
+          "inv": "egress-sensitivity totality",
+          "chokepoint": "SENSITIVE_COLUMNS",
+          "verb": "test",
+          "oracle": "egress-sensitivity totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "storage",
+            "to": "public-egress"
+          },
+          "reliants": 1,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "kernel read+write capability",
+          "chokepoint": "query",
+          "verb": "guard",
+          "oracle": "context-capability totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "storage"
+          },
+          "reliants": 1,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "kernel write boundary",
+          "chokepoint": "writeClass",
+          "verb": "test",
+          "oracle": "write-policy totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "storage"
+          },
+          "reliants": 1,
+          "witnessed": false
+        },
+        {
+          "comp": "Routing",
+          "inv": "served-content inertness",
+          "chokepoint": "inertHeaders",
+          "verb": "test",
+          "oracle": "served-content inertness totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "served-untrusted",
+            "to": "public-egress"
+          },
+          "reliants": 1,
+          "witnessed": false
+        },
+        {
+          "comp": "Routing",
+          "inv": "served-read gating",
+          "chokepoint": "denyUnlessBearerScope",
+          "verb": "guard",
+          "oracle": "served bearer-gating totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "public-egress",
+            "to": "served-untrusted"
+          },
+          "reliants": 1,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "born-hashed secrets",
+          "chokepoint": "SENSITIVE_COLUMNS",
+          "verb": "test",
+          "oracle": "born-hashed-secret totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "storage",
+            "to": "public-egress"
+          },
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "credential-mint gating",
+          "chokepoint": "findUngatedCredentialMints",
+          "verb": "test",
+          "oracle": "credential-mint gating totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "owner-trusted"
+          },
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "data-is-destiny no-hybrid",
+          "chokepoint": "findStoredDerivedAggregates",
+          "verb": "test",
+          "oracle": "data-is-destiny no-hybrid totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "facet/kernel-column collision",
+          "chokepoint": "FACET_RESERVED_COLUMNS",
+          "verb": "test",
+          "oracle": "facet-kernel-collision totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "immutable-field enforcement",
+          "chokepoint": "applyKernelRules",
+          "verb": "test",
+          "oracle": "IMMUTABLE-registry totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "storage"
+          },
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "instance-identity host",
+          "chokepoint": "resolveHost",
+          "verb": "guard",
+          "oracle": "instance-identity host resolution",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "public-egress",
+            "to": "owner-trusted"
+          },
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "pattern-effects totality",
+          "chokepoint": "PATTERN_EFFECTS",
+          "verb": "test",
+          "oracle": "pattern-effects totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "sql-identifier quoting",
+          "chokepoint": "quoteIdent",
+          "verb": "guard",
+          "oracle": "quoteIdent — grammar",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "storage"
+          },
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "SSRF block-host coverage",
+          "chokepoint": "isBlockedFederationHost",
+          "verb": "guard",
+          "oracle": "SSRF block-host totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "owner-trusted",
+            "to": "federated"
+          },
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Hive",
+          "inv": "token-scope-grammar",
+          "chokepoint": "isBroadTokenScope",
+          "verb": "guard",
+          "oracle": "broad-token scope-grammar totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": {
+            "from": "agent-mcp",
+            "to": "owner-trusted"
+          },
+          "reliants": 0,
+          "witnessed": false
+        },
+        {
+          "comp": "Session",
+          "inv": "tools SSOT totality",
+          "chokepoint": "TOOLS",
+          "verb": "test",
+          "oracle": "tools SSOT totality",
+          "grade": "U",
+          "verdict": "unknown",
+          "crossing": null,
+          "reliants": 0,
+          "witnessed": false
+        }
+      ],
+      "withheld": 0,
+      "total": 16
+    },
+    "gatesClean": 0,
+    "gatesTotal": 16,
+    "grades": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0,
+      "U": 16
+    },
+    "crossings": {
+      "shown": [
+        {
+          "sym": "applyKernelRules",
+          "from": "agent-mcp",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        },
+        {
+          "sym": "currentHost",
+          "from": "public-egress",
+          "to": "owner-trusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": null,
+          "ownerWhy": "no component owns a symbol named `currentHost`, so this crossing counts toward nobody's perimeter."
+        },
+        {
+          "sym": "denyUnlessBearerScope",
+          "from": "public-egress",
+          "to": "served-untrusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Routing"
+        },
+        {
+          "sym": "findUngatedCredentialMints",
+          "from": "agent-mcp",
+          "to": "owner-trusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        },
+        {
+          "sym": "inertHeaders",
+          "from": "served-untrusted",
+          "to": "public-egress",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Routing"
+        },
+        {
+          "sym": "isBlockedFederationHost",
+          "from": "owner-trusted",
+          "to": "federated",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        },
+        {
+          "sym": "isBroadTokenScope",
+          "from": "agent-mcp",
+          "to": "owner-trusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        },
+        {
+          "sym": "mintSecrets",
+          "from": "agent-mcp",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": null,
+          "ownerWhy": "no component owns a symbol named `mintSecrets`, so this crossing counts toward nobody's perimeter."
+        },
+        {
+          "sym": "ownerDataCtx",
+          "from": "served-untrusted",
+          "to": "owner-trusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": null,
+          "ownerWhy": "no component owns a symbol named `ownerDataCtx`, so this crossing counts toward nobody's perimeter."
+        },
+        {
+          "sym": "query",
+          "from": "served-untrusted",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        },
+        {
+          "sym": "quoteIdent",
+          "from": "agent-mcp",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Core"
+        },
+        {
+          "sym": "sealAll",
+          "from": "storage",
+          "to": "public-egress",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        },
+        {
+          "sym": "SENSITIVE_COLUMNS",
+          "from": "storage",
+          "to": "public-egress",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        },
+        {
+          "sym": "servedDataCtx",
+          "from": "owner-trusted",
+          "to": "served-untrusted",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": null,
+          "ownerWhy": "no component owns a symbol named `servedDataCtx`, so this crossing counts toward nobody's perimeter."
+        },
+        {
+          "sym": "writeClass",
+          "from": "agent-mcp",
+          "to": "storage",
+          "tier": 2,
+          "security": true,
+          "present": true,
+          "heat": null,
+          "owner": "Hive"
+        }
+      ],
+      "withheld": 0,
+      "total": 15
+    },
+    "atlas": {
+      "at": "2026-07-11T01:16:19.352Z",
+      "stale": false,
+      "tiers": {
+        "enshrined": 0,
+        "checked": 15,
+        "convention": 0
+      },
+      "drift": 0,
+      "dangling": 0,
+      "overclaimed": 0,
+      "tier3Security": [],
+      "hazards": []
+    },
+    "darknesses": [
+      {
+        "key": "unwitnessed",
+        "label": "unwitnessed",
+        "what": "invariants with no observed negative control — nothing has ever been seen to break them",
+        "dark": 16,
+        "total": 16,
+        "unit": "declared invariants",
+        "worst": {
+          "shown": [
+            "Hive — SSRF block-host coverage",
+            "Hive — born-hashed secrets",
+            "Hive — credential-mint gating",
+            "Hive — data-is-destiny no-hybrid",
+            "Hive — egress-sensitivity totality",
+            "Hive — facet/kernel-column collision",
+            "Hive — immutable-field enforcement",
+            "Hive — instance-identity host"
+          ],
+          "withheld": 8,
+          "total": 16
+        }
+      },
+      {
+        "key": "unclaimed",
+        "label": "unclaimed",
+        "what": "files no claim names — code inside the map that nothing in the spec points at",
+        "dark": 22,
+        "total": 68,
+        "unit": "files in the graph",
+        "worst": {
+          "shown": [
+            "entities/Hive/completion.ts",
+            "entities/Hive/constraints.ts",
+            "entities/Hive/kernel.ts",
+            "entities/Hive/labels.ts",
+            "entities/Hive/transform.ts",
+            "entities/features/documents/security.ts",
+            "entities/features/security.ts",
+            "entities/features/system-tasks/manifest.ts"
+          ],
+          "withheld": 14,
+          "total": 22
+        }
+      },
+      {
+        "key": "undocumented",
+        "label": "undocumented",
+        "what": "symbols with no docblock — meaning a reader has to derive from the body",
+        "dark": 289,
+        "total": 485,
+        "unit": "symbols",
+        "worst": {
+          "shown": [
+            "entities/Hive/completion.ts#COMPLETION_METRICS",
+            "entities/Hive/completion.ts#CompletionProgress",
+            "entities/Hive/completion.ts#CompletionSpec",
+            "entities/Hive/completion.ts#ConditionProgress",
+            "entities/Hive/constraints.ts#COMPARISON_OPS",
+            "entities/Hive/constraints.ts#CONSTRAINT_RULES",
+            "entities/Hive/data.ts#DataContext",
+            "entities/Hive/data.ts#executeMutate"
+          ],
+          "withheld": 281,
+          "total": 289
+        }
+      },
+      {
+        "key": "unvisited",
+        "label": "unvisited",
+        "what": "paths recent work keeps touching that the graph does not own — no closure can be computed for them, so every read-cost figure here excludes them",
+        "dark": 147,
+        "total": 215,
+        "unit": "paths touched in the concern band",
+        "worst": {
+          "shown": [
+            ".dev.vars.example",
+            ".npmrc",
+            "AGENTS.md",
+            "assets/fonts/HankenGrotesk.ttf",
+            "assets/fonts/SplineSansMono.ttf",
+            "coherence.config.json",
+            "docs/coherence/_graph.html",
+            "docs/coherence/_overview.html"
+          ],
+          "withheld": 139,
+          "total": 147
+        }
+      }
+    ]
+  },
+  "journal": {
+    "blocked": {
+      "shown": [],
+      "withheld": 0,
+      "total": 0
+    },
+    "open": {
+      "shown": [],
+      "withheld": 0,
+      "total": 0
+    },
+    "decisions": {
+      "shown": [
+        {
+          "id": "d-de4de09e",
+          "kind": "decision",
+          "at": "2026-08-03T14:15:12.423Z",
+          "agent": "main",
+          "session": "main-main-2026-08-03",
+          "commit": "8dbad71",
+          "chose": "pin coherence-harness to github:daniloc/coherence#v0.27.0 and adopt the lifecycle control (claudeProjectRoot: .., hooks install)",
+          "because": "the specs are authored in the crossing/zone dialect the old pin could not parse (12 false unanchored-invariant failures); the tagged GitHub release is reproducible for CI where a local path is not",
+          "over": [
+            "file: dep on the local ~/Documents/Development/coherence checkout, or staying on v0.5.3"
+          ],
+          "couldBe": [],
+          "discriminatedBy": "",
+          "news": false
+        }
+      ],
+      "withheld": 0,
+      "total": 1
+    },
+    "marks": [
+      {
+        "id": "d-de4de09e",
+        "lane": "decision",
+        "at": "2026-08-03T14:15:12.423Z",
+        "news": false,
+        "shown": true
+      }
+    ],
+    "settled": {
+      "resolved": 0,
+      "dismissed": 0,
+      "retracted": 0,
+      "inFrame": 0
+    },
+    "totals": {
+      "blocked": 0,
+      "open": 0,
+      "decisions": 1,
+      "records": 1,
+      "sessions": 1,
+      "unreadable": 0
+    },
+    "news": {
+      "blocked": 0,
+      "open": 0,
+      "decisions": 0
+    }
+  },
+  "trajectory": {
+    "structural": null,
+    "structuralWhy": "no prior index and no tags in this repository. A FIRST LOOK has no news by definition: everything below is the standing state, not a delta.",
+    "loc": null,
+    "mass": null,
+    "drift": {
+      "at": "2026-07-11T01:18:19.027Z",
+      "stale": false,
+      "locality": [
+        1,
+        1,
+        0.2914572864321608,
+        0.3270440251572327,
+        0.6585365853658537,
+        0.5217391304347826,
+        0.291044776119403,
+        0.3868312757201646
+      ],
+      "spread": [
+        1,
+        1,
+        2.1538461538461537,
+        2.6153846153846154,
+        1.2307692307692308,
+        1.6153846153846154,
+        2.230769230769231,
+        2.1666666666666665
+      ],
+      "verdict": "LOCALITY decohering, SPREAD widening — driving toward wider SPREAD, but recent gestures are mostly converge/couple — likely cross-cutting or one-off work, not a smearing trend; read the seam, not the slope",
+      "localityArrow": "▼",
+      "spreadArrow": "▲"
+    }
+  },
+  "empty": false
+}

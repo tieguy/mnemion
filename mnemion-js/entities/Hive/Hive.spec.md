@@ -18,6 +18,7 @@ The single per-user Durable Object that owns all SQLite data and funnels every a
 - instance-identity host
 
 ## works when
+- lives in storage
 - hive.ts exists at this node
 - hive.ts imports cloudflare:workers
 - hive.ts imports ./data
@@ -31,19 +32,19 @@ The single per-user Durable Object that owns all SQLite data and funnels every a
 - mutate-gate.ts exists at this node
 - mutate-gate.ts imports ./policy
 - prime.ts imports ./policy
-- boundary "kernel write boundary" at writeClass via test "write-policy totality"
-- boundary "kernel read+write capability" at query via guard "context-capability totality"
-- boundary "egress-sensitivity totality" at SENSITIVE_COLUMNS via test "egress-sensitivity totality"
+- boundary "kernel write boundary" at writeClass crossing agent-mcp -> storage via test "write-policy totality"
+- boundary "kernel read+write capability" at query crossing served-untrusted -> storage via guard "context-capability totality"
+- boundary "egress-sensitivity totality" at SENSITIVE_COLUMNS crossing storage -> public-egress via test "egress-sensitivity totality"
 - boundary "pattern-effects totality" at PATTERN_EFFECTS via test "pattern-effects totality"
 - boundary "facet/kernel-column collision" at FACET_RESERVED_COLUMNS via test "facet-kernel-collision totality"
 - boundary "data-is-destiny no-hybrid" at findStoredDerivedAggregates via test "data-is-destiny no-hybrid totality"
-- boundary "credential-mint gating" at findUngatedCredentialMints via test "credential-mint gating totality"
-- boundary "born-hashed secrets" at SENSITIVE_COLUMNS via test "born-hashed-secret totality"
-- boundary "immutable-field enforcement" at applyKernelRules via test "IMMUTABLE-registry totality"
-- boundary "token-scope-grammar" at isBroadTokenScope via guard "broad-token scope-grammar totality"
-- boundary "SSRF block-host coverage" at isBlockedFederationHost via guard "SSRF block-host totality"
-- boundary "sql-identifier quoting" at quoteIdent via guard "quoteIdent — grammar"
-- boundary "instance-identity host" at resolveHost via guard "instance-identity host resolution"
+- boundary "credential-mint gating" at findUngatedCredentialMints crossing agent-mcp -> owner-trusted via test "credential-mint gating totality"
+- boundary "born-hashed secrets" at SENSITIVE_COLUMNS crossing storage -> public-egress via test "born-hashed-secret totality"
+- boundary "immutable-field enforcement" at applyKernelRules crossing agent-mcp -> storage via test "IMMUTABLE-registry totality"
+- boundary "token-scope-grammar" at isBroadTokenScope crossing agent-mcp -> owner-trusted via guard "broad-token scope-grammar totality"
+- boundary "SSRF block-host coverage" at isBlockedFederationHost crossing owner-trusted -> federated via guard "SSRF block-host totality"
+- boundary "sql-identifier quoting" at quoteIdent crossing agent-mcp -> storage via guard "quoteIdent — grammar"
+- boundary "instance-identity host" at resolveHost crossing public-egress -> owner-trusted via guard "instance-identity host resolution"
 - effects.ts exists at this node
 - effects.ts imports ../features
 - effects.ts imports ../features/compose

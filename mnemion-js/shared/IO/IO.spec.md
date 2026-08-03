@@ -3,6 +3,7 @@
 Outbound and inbound adapters: derived publication renderers, web-URL resolution with caching, git pack assembly, and text extraction.
 
 ## works when
+- lives in public-egress
 - publications.ts exists at this node
 - web.ts exists at this node
 - git.ts exists at this node

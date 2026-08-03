@@ -7,13 +7,14 @@ Declarative HTTP dispatch and session machinery: pattern-matched route table plu
 - served-read gating
 
 ## works when
+- lives in served-untrusted
 - router.ts exists at this node
 - router.ts imports ../core/constants
 - routes/auth.ts exists at this node
 - routes/io.ts exists at this node
 - routes/io.ts imports ../router
-- boundary "served-content inertness" at inertHeaders via test "served-content inertness totality"
-- boundary "served-read gating" at denyUnlessBearerScope via guard "served bearer-gating totality"
+- boundary "served-content inertness" at inertHeaders crossing served-untrusted -> public-egress via test "served-content inertness totality"
+- boundary "served-read gating" at denyUnlessBearerScope crossing public-egress -> served-untrusted via guard "served bearer-gating totality"
 
 ## why
 

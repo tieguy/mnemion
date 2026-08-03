@@ -1,0 +1,36 @@
+{
+  "lots": {
+    ".": {
+      "x": 0,
+      "y": 0
+    },
+    "entities/Hive": {
+      "x": 1,
+      "y": 0
+    },
+    "entities/Session": {
+      "x": 1,
+      "y": 1
+    },
+    "entities/features": {
+      "x": 0,
+      "y": 1
+    },
+    "shared/Auth": {
+      "x": -1,
+      "y": 1
+    },
+    "shared/IO": {
+      "x": -1,
+      "y": 0
+    },
+    "shared/Routing": {
+      "x": -1,
+      "y": -1
+    },
+    "shared/core": {
+      "x": 0,
+      "y": -1
+    }
+  }
+}

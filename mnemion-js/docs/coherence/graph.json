@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-04 15:45Z",
+  "generatedAt": "2026-08-03 14:14Z",
   "root": "mnemion-js",
-  "absRoot": "/Users/daniloc/Documents/Development/project-cambium/mnemion-js",
+  "absRoot": "/Users/daniloc/Documents/Development/mnemion/mnemion-js",
   "nodes": [
     {
       "id": "c:.",
@@ -15,6 +15,7 @@
         "README.md exists at root",
         "src/index.ts imports @cloudflare/workers-oauth-provider"
       ],
+      "prose": "## zones\n- owner-trusted: Full kernel access — the ownerDataCtx capability (the only trusted:true reader/writer).\n- storage: The SQLite / R2 substrate beneath every chart.\n- served-untrusted: Public reads + ingress/upload writes — the servedDataCtx capability (trusted:false).\n- public-egress: Served HTTP responses (/o /p /f) and the /ws broadcast — leaves the DO in the clear.\n- agent-mcp: The MCP tool surface — agent input, consent-gated, never trusted with the kernel.\n- federated: Cross-hive resolve over the network — a sovereign foreign hive.",
       "why": "The worker entry keeps the entire HTTP surface as one scannable declarative route table (method, pattern, auth gate, handler per line) so the system's shape is graspable from the declarations alone, per the \"code as schematic\" principle. OAuthProvider wraps the worker to own the OAuth 2.1 / DCR / token flow and intercept `/mcp`, `/token`, `/register` before dispatch, so the rest of the code never re-implements auth plumbing."
     },
     {
@@ -24,6 +25,7 @@
       "sub": "The single per-user Durable Object that owns all SQLite data and funnels every agent write through one kernel-enforced chokepoint.",
       "claimed": true,
       "claims": [
+        "lives in storage",
         "hive.ts exists at this node",
         "hive.ts imports cloudflare:workers",
         "hive.ts imports ./data",
@@ -37,19 +39,19 @@
         "mutate-gate.ts exists at this node",
         "mutate-gate.ts imports ./policy",
         "prime.ts imports ./policy",
-        "boundary \"kernel write boundary\" at writeClass via test \"write-policy totality\"",
-        "boundary \"kernel read+write capability\" at query via guard \"context-capability totality\"",
-        "boundary \"egress-sensitivity totality\" at SENSITIVE_COLUMNS via test \"egress-sensitivity totality\"",
+        "boundary \"kernel write boundary\" at writeClass crossing agent-mcp -> storage via test \"write-policy totality\"",
+        "boundary \"kernel read+write capability\" at query crossing served-untrusted -> storage via guard \"context-capability totality\"",
+        "boundary \"egress-sensitivity totality\" at SENSITIVE_COLUMNS crossing storage -> public-egress via test \"egress-sensitivity totality\"",
         "boundary \"pattern-effects totality\" at PATTERN_EFFECTS via test \"pattern-effects totality\"",
         "boundary \"facet/kernel-column collision\" at FACET_RESERVED_COLUMNS via test \"facet-kernel-collision totality\"",
         "boundary \"data-is-destiny no-hybrid\" at findStoredDerivedAggregates via test \"data-is-destiny no-hybrid totality\"",
-        "boundary \"credential-mint gating\" at findUngatedCredentialMints via test \"credential-mint gating totality\"",
-        "boundary \"born-hashed secrets\" at SENSITIVE_COLUMNS via test \"born-hashed-secret totality\"",
-        "boundary \"immutable-field enforcement\" at applyKernelRules via test \"IMMUTABLE-registry totality\"",
-        "boundary \"token-scope-grammar\" at isBroadTokenScope via guard \"broad-token scope-grammar totality\"",
-        "boundary \"SSRF block-host coverage\" at isBlockedFederationHost via guard \"SSRF block-host totality\"",
-        "boundary \"sql-identifier quoting\" at quoteIdent via guard \"quoteIdent — grammar\"",
-        "boundary \"instance-identity host\" at resolveHost via guard \"instance-identity host resolution\"",
+        "boundary \"credential-mint gating\" at findUngatedCredentialMints crossing agent-mcp -> owner-trusted via test \"credential-mint gating totality\"",
+        "boundary \"born-hashed secrets\" at SENSITIVE_COLUMNS crossing storage -> public-egress via test \"born-hashed-secret totality\"",
+        "boundary \"immutable-field enforcement\" at applyKernelRules crossing agent-mcp -> storage via test \"IMMUTABLE-registry totality\"",
+        "boundary \"token-scope-grammar\" at isBroadTokenScope crossing agent-mcp -> owner-trusted via guard \"broad-token scope-grammar totality\"",
+        "boundary \"SSRF block-host coverage\" at isBlockedFederationHost crossing owner-trusted -> federated via guard \"SSRF block-host totality\"",
+        "boundary \"sql-identifier quoting\" at quoteIdent crossing agent-mcp -> storage via guard \"quoteIdent — grammar\"",
+        "boundary \"instance-identity host\" at resolveHost crossing public-egress -> owner-trusted via guard \"instance-identity host resolution\"",
         "effects.ts exists at this node",
         "effects.ts imports ../features",
         "effects.ts imports ../features/compose",
@@ -86,6 +88,7 @@
       "sub": "The per-session McpAgent Durable Object that speaks the MCP protocol and proxies tool calls to the hive over RPC.",
       "claimed": true,
       "claims": [
+        "lives in agent-mcp",
         "session.ts exists at this node",
         "session.ts imports agents/mcp",
         "tools.ts exists at this node",
@@ -170,6 +173,7 @@
       "sub": "Outbound and inbound adapters: derived publication renderers, web-URL resolution with caching, git pack assembly, and text extraction.",
       "claimed": true,
       "claims": [
+        "lives in public-egress",
         "publications.ts exists at this node",
         "web.ts exists at this node",
         "git.ts exists at this node",
@@ -184,13 +188,14 @@
       "sub": "Declarative HTTP dispatch and session machinery: pattern-matched route table plus constant-time, revocable session auth helpers.",
       "claimed": true,
       "claims": [
+        "lives in served-untrusted",
         "router.ts exists at this node",
         "router.ts imports ../core/constants",
         "routes/auth.ts exists at this node",
         "routes/io.ts exists at this node",
         "routes/io.ts imports ../router",
-        "boundary \"served-content inertness\" at inertHeaders via test \"served-content inertness totality\"",
-        "boundary \"served-read gating\" at denyUnlessBearerScope via guard \"served bearer-gating totality\""
+        "boundary \"served-content inertness\" at inertHeaders crossing served-untrusted -> public-egress via test \"served-content inertness totality\"",
+        "boundary \"served-read gating\" at denyUnlessBearerScope crossing public-egress -> served-untrusted via guard \"served bearer-gating totality\""
       ],
       "why": "(The router is the worker's declarative HTTP dispatch — method, pattern, auth gate, param constraints, matched in declaration order — with handlers grouped by domain under `routes/`, so the full routing surface stays scannable. Two auth primitives ride along that aren't yet declared invariants on their own: `timingSafeEqual` is constant-time to close a timing-attack finding on secret/token/signature checks, and session cookies carry a random sid plus a KV-stored epoch so every session can be revoked without rotating `MNEMION_SECRET`. Candidates for promotion when an oracle is added.)\n\n**Served-content inertness.** Agent- or uploader-authored content served on the FIRST-PARTY origin (which holds the owner's session cookie and can drive `/api/*`/`/mcp`) must never run as active script. The rejected design was a per-handler MIME block-list (\"any served path remembers to neutralize active MIME\") — correctly implemented at `/o` but silently drifted at two siblings: `/p` publications omitted the `sandbox` directive so owner-authored markup ran same-origin, and `/f` documents echoed the UPLOADER-controlled `Content-Type` inline with neither `nosniff` nor `sandbox`, turning a `text/html` upload into stored XSS / owner-session theft. A block-list of per-handler MIME handling fails open the moment one site forgets — the same failure mode that made it a convention crossing in the first place.\n\n**Served-read gating.** The auth dual of inertness: where inertness governs HOW served content is emitted, this governs WHETHER a visibility-gated resource is served at all. The rejected design was a 5-call-site block-list — \"any new served read route remembers to gate\" — that fails open the moment one route forgets, a real risk because adding a served read path is otherwise a cheap edit. A secretless deploy was an additional silent failure mode: with no master secret configured, owner-only APIs returned 503 but served reads still went through the bearer check against a NULL secret. Both failure modes are killed at one chokepoint with a fixed enumeration over the gated route-shape set. Anchored `via guard` rather than `via test` because the domain is a known route table, not a runtime-varying live domain.\n\n(Operational protection of the public surfaces is cost/availability, not a security boundary, so it isn't a declared invariant. Two layers, both fail-OPEN so absence is harmless: `rateLimit` over the GA `ratelimit` bindings caps the public WRITE surface per endpoint and the public READ surfaces per client IP, and `cached` wraps the public GET reads in `caches.default` so a hit returns from Cloudflare's per-colo edge without running the Worker or touching the DO. Together they answer the single-DO contention ceiling: hot public reads offload to the edge, and what reaches the DO — writes, cache misses, cache-busting enumeration — is throttled. Early `Content-Length` caps on the buffered text bodies bound Worker memory before the transform DSL runs.)",
       "invariants": [
@@ -5509,431 +5514,325 @@
       "label": "react",
       "kind": "external",
       "sub": "module"
-    },
-    {
-      "id": "f:worker-configuration.d.ts",
-      "parent": "c:.",
-      "label": "worker-configuration.d.ts",
-      "kind": "file",
-      "sub": "worker-configuration.d.ts",
-      "path": "worker-configuration.d.ts",
-      "prose": "eslint-disable"
-    },
-    {
-      "id": "s:worker-configuration.d.ts#httpServerHandler",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "httpServerHandler",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "worker-configuration.d.ts",
-      "line": 12645
-    },
-    {
-      "id": "s:worker-configuration.d.ts#onRequest",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "onRequest",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 12684
-    },
-    {
-      "id": "s:worker-configuration.d.ts#PipelineRecord",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "PipelineRecord",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12703
-    },
-    {
-      "id": "s:worker-configuration.d.ts#PipelineBatchMetadata",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "PipelineBatchMetadata",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12704
-    },
-    {
-      "id": "s:worker-configuration.d.ts#Pipeline",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "Pipeline",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "worker-configuration.d.ts",
-      "line": 12708
-    },
-    {
-      "id": "s:worker-configuration.d.ts#__RPC_STUB_BRAND",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "__RPC_STUB_BRAND",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 12773,
-      "prose": "Branded types for identifying `WorkerEntrypoint`/`DurableObject`/`Target`s.\nTypeScript uses *structural* typing meaning anything with the same shape as type `T` is a `T`.\nFor the classes exported by `cloudflare:workers` we want *nominal* typing (i.e. we only want to\naccept `WorkerEntrypoint` from `cloudflare:workers`, not any other class with the same shape)"
-    },
-    {
-      "id": "s:worker-configuration.d.ts#__RPC_TARGET_BRAND",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "__RPC_TARGET_BRAND",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 12774
-    },
-    {
-      "id": "s:worker-configuration.d.ts#__WORKER_ENTRYPOINT_BRAND",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "__WORKER_ENTRYPOINT_BRAND",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 12775
-    },
-    {
-      "id": "s:worker-configuration.d.ts#__DURABLE_OBJECT_BRAND",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "__DURABLE_OBJECT_BRAND",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 12776
-    },
-    {
-      "id": "s:worker-configuration.d.ts#__WORKFLOW_ENTRYPOINT_BRAND",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "__WORKFLOW_ENTRYPOINT_BRAND",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 12777
-    },
-    {
-      "id": "s:worker-configuration.d.ts#RpcTargetBranded",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "RpcTargetBranded",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "worker-configuration.d.ts",
-      "line": 12778
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkerEntrypointBranded",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkerEntrypointBranded",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "worker-configuration.d.ts",
-      "line": 12781
-    },
-    {
-      "id": "s:worker-configuration.d.ts#DurableObjectBranded",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "DurableObjectBranded",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "worker-configuration.d.ts",
-      "line": 12784
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowEntrypointBranded",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowEntrypointBranded",
-      "kind": "symbol",
-      "sub": "interface",
-      "path": "worker-configuration.d.ts",
-      "line": 12787
-    },
-    {
-      "id": "s:worker-configuration.d.ts#EntrypointBranded",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "EntrypointBranded",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12790
-    },
-    {
-      "id": "s:worker-configuration.d.ts#Stubable",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "Stubable",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12792,
-      "prose": "Types that can be used through `Stub`s"
-    },
-    {
-      "id": "s:worker-configuration.d.ts#Stub",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "Stub",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12814
-    },
-    {
-      "id": "s:worker-configuration.d.ts#Provider",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "Provider",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12861,
-      "prose": "Base type for all other types providing RPC-like interfaces.\nRewrites all methods/properties to be `MethodOrProperty`s, while preserving callable types.\n`Reserved` names (e.g. stub method names like `dup()`) and symbols can't be accessed over RPC."
-    },
-    {
-      "id": "s:worker-configuration.d.ts#RpcStub",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "RpcStub",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12909
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowDurationLabel",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowDurationLabel",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12944
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowSleepDuration",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowSleepDuration",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12945
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowDelayDuration",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowDelayDuration",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12946
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowTimeoutDuration",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowTimeoutDuration",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12947
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowRetentionDuration",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowRetentionDuration",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12948
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowBackoff",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowBackoff",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12949
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowStepSensitivity",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowStepSensitivity",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12950
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowStepConfig",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowStepConfig",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12951
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowStepRollbackConfig",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowStepRollbackConfig",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12960
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowCronSchedule",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowCronSchedule",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12961
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowEvent",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowEvent",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12967
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowStepEvent",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowStepEvent",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12974
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowStepContext",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowStepContext",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12980
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowRollbackContext",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowRollbackContext",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12988
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowRollbackHandler",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowRollbackHandler",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12995
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowStepRollbackOptions",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowStepRollbackOptions",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 12996
-    },
-    {
-      "id": "s:worker-configuration.d.ts#WorkflowInstanceStatus",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "WorkflowInstanceStatus",
-      "kind": "symbol",
-      "sub": "type",
-      "path": "worker-configuration.d.ts",
-      "line": 13010
-    },
-    {
-      "id": "s:worker-configuration.d.ts#waitUntil",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "waitUntil",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "worker-configuration.d.ts",
-      "line": 13018
-    },
-    {
-      "id": "s:worker-configuration.d.ts#withEnv",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "withEnv",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "worker-configuration.d.ts",
-      "line": 13019
-    },
-    {
-      "id": "s:worker-configuration.d.ts#withExports",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "withExports",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "worker-configuration.d.ts",
-      "line": 13020
-    },
-    {
-      "id": "s:worker-configuration.d.ts#withEnvAndExports",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "withEnvAndExports",
-      "kind": "symbol",
-      "sub": "function",
-      "path": "worker-configuration.d.ts",
-      "line": 13021
-    },
-    {
-      "id": "s:worker-configuration.d.ts#env",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "env",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 13022
-    },
-    {
-      "id": "s:worker-configuration.d.ts#exports",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "exports",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 13023
-    },
-    {
-      "id": "s:worker-configuration.d.ts#cache",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "cache",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 13024
-    },
-    {
-      "id": "s:worker-configuration.d.ts#tracing",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "tracing",
-      "kind": "symbol",
-      "sub": "const",
-      "path": "worker-configuration.d.ts",
-      "line": 13025
-    },
-    {
-      "id": "s:worker-configuration.d.ts#NonRetryableError",
-      "parent": "f:worker-configuration.d.ts",
-      "label": "NonRetryableError",
-      "kind": "symbol",
-      "sub": "class",
-      "path": "worker-configuration.d.ts",
-      "line": 14404,
-      "prose": "NonRetryableError allows for a user to throw a fatal error\nthat makes a Workflow instance fail immediately without triggering a retry"
     }
   ],
   "edges": [
     {
+      "id": "f:entities/Hive/completion.ts->f:shared/core/sql.ts:imports",
+      "source": "f:entities/Hive/completion.ts",
+      "target": "f:shared/core/sql.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/completion.ts->f:entities/Hive/constraints.ts:imports",
+      "source": "f:entities/Hive/completion.ts",
+      "target": "f:entities/Hive/constraints.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:entities/Hive/prime.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:entities/Hive/prime.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:shared/core/sql.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:shared/core/sql.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:shared/core/log.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:entities/Hive/constraints.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:entities/Hive/constraints.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:entities/Hive/completion.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:entities/Hive/completion.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/data.ts->f:entities/Hive/kernel-columns.ts:imports",
+      "source": "f:entities/Hive/data.ts",
+      "target": "f:entities/Hive/kernel-columns.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/documents.ts->f:shared/Auth/credentials.ts:imports",
+      "source": "f:entities/Hive/documents.ts",
+      "target": "f:shared/Auth/credentials.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/documents.ts->f:shared/IO/extract.ts:imports",
+      "source": "f:entities/Hive/documents.ts",
+      "target": "f:shared/IO/extract.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/documents.ts->f:shared/core/log.ts:imports",
+      "source": "f:entities/Hive/documents.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/effects.ts->f:entities/features/index.ts:imports",
+      "source": "f:entities/Hive/effects.ts",
+      "target": "f:entities/features/index.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/effects.ts->f:entities/features/compose.ts:imports",
+      "source": "f:entities/Hive/effects.ts",
+      "target": "f:entities/features/compose.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/evolution.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Hive/evolution.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/evolution.ts->f:entities/Hive/schema.ts:imports",
+      "source": "f:entities/Hive/evolution.ts",
+      "target": "f:entities/Hive/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/evolution.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/evolution.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/evolution.ts->f:entities/Hive/kernel-columns.ts:imports",
+      "source": "f:entities/Hive/evolution.ts",
+      "target": "f:entities/Hive/kernel-columns.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/evolution.ts->f:shared/core/format-palette.ts:imports",
+      "source": "f:entities/Hive/evolution.ts",
+      "target": "f:shared/core/format-palette.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/evolution.ts->f:entities/Hive/reports.ts:imports",
+      "source": "f:entities/Hive/evolution.ts",
+      "target": "f:entities/Hive/reports.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/federation.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/Hive/federation.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/federation.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Hive/federation.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:entities/Hive/hive.ts->x:cloudflare:workers:imports",
       "source": "f:entities/Hive/hive.ts",
       "target": "x:cloudflare:workers",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/transform.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/transform.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/schema.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/kernel-columns.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/kernel-columns.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/labels.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/labels.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:shared/core/log.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:shared/core/host.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:shared/core/host.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:shared/Auth/credentials.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:shared/Auth/credentials.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/evolution.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/evolution.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/data.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/data.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/effects.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/effects.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/prime.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/prime.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:shared/IO/web.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:shared/IO/web.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/documents.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/documents.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/served.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/served.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/federation.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/federation.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/hive.ts->f:entities/Hive/reports.ts:imports",
+      "source": "f:entities/Hive/hive.ts",
+      "target": "f:entities/Hive/reports.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/kernel.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/kernel.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/kernel.ts->f:shared/core/view-palette.ts:imports",
+      "source": "f:entities/Hive/kernel.ts",
+      "target": "f:shared/core/view-palette.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/kernel.ts->f:entities/features/index.ts:imports",
+      "source": "f:entities/Hive/kernel.ts",
+      "target": "f:entities/features/index.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/kernel.ts->f:entities/features/compose.ts:imports",
+      "source": "f:entities/Hive/kernel.ts",
+      "target": "f:entities/features/compose.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/mutate-gate.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/mutate-gate.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/policy.ts->f:entities/features/security.ts:imports",
+      "source": "f:entities/Hive/policy.ts",
+      "target": "f:entities/features/security.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/prime.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Hive/prime.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/prime.ts->f:shared/core/log.ts:imports",
+      "source": "f:entities/Hive/prime.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/prime.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/prime.ts",
+      "target": "f:entities/Hive/policy.ts",
       "kind": "imports"
     },
     {
@@ -5947,6 +5846,102 @@
       "source": "f:entities/Hive/prime.ts",
       "target": "i:AI",
       "kind": "binds"
+    },
+    {
+      "id": "f:entities/Hive/reports.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Hive/reports.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/reports.ts->f:entities/Hive/prime.ts:imports",
+      "source": "f:entities/Hive/reports.ts",
+      "target": "f:entities/Hive/prime.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/reports.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/Hive/reports.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:entities/Session/tools.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:entities/Session/tools.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:shared/core/dev-seed.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:shared/core/dev-seed.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:shared/core/view-palette.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:shared/core/view-palette.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:entities/Hive/kernel-columns.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:entities/Hive/kernel-columns.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:entities/features/index.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:entities/features/index.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/schema.ts->f:entities/features/compose.ts:imports",
+      "source": "f:entities/Hive/schema.ts",
+      "target": "f:entities/features/compose.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/served.ts->f:shared/core/chart-svg.ts:imports",
+      "source": "f:entities/Hive/served.ts",
+      "target": "f:shared/core/chart-svg.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/served.ts->f:shared/core/chart-spec.ts:imports",
+      "source": "f:entities/Hive/served.ts",
+      "target": "f:shared/core/chart-spec.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/served.ts->f:shared/core/escape.ts:imports",
+      "source": "f:entities/Hive/served.ts",
+      "target": "f:shared/core/escape.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/served.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/Hive/served.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Hive/served.ts->f:shared/IO/publications.ts:imports",
+      "source": "f:entities/Hive/served.ts",
+      "target": "f:shared/IO/publications.ts",
+      "kind": "imports"
     },
     {
       "id": "f:entities/Session/session.ts->x:agents/mcp:imports",
@@ -5967,9 +5962,303 @@
       "kind": "imports"
     },
     {
+      "id": "f:entities/Session/session.ts->f:entities/Hive/hive.ts:imports",
+      "source": "f:entities/Session/session.ts",
+      "target": "f:entities/Hive/hive.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Session/session.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Session/session.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Session/session.ts->f:entities/Hive/mutate-gate.ts:imports",
+      "source": "f:entities/Session/session.ts",
+      "target": "f:entities/Hive/mutate-gate.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Session/session.ts->f:entities/Hive/evolution.ts:imports",
+      "source": "f:entities/Session/session.ts",
+      "target": "f:entities/Hive/evolution.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Session/session.ts->f:shared/core/format-palette.ts:imports",
+      "source": "f:entities/Session/session.ts",
+      "target": "f:shared/core/format-palette.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Session/session.ts->f:entities/Session/tools.ts:imports",
+      "source": "f:entities/Session/session.ts",
+      "target": "f:entities/Session/tools.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/Session/tools.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/Session/tools.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/hooks.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/features/clipboards/hooks.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/hooks.ts->f:entities/Hive/constraints.ts:imports",
+      "source": "f:entities/features/clipboards/hooks.ts",
+      "target": "f:entities/Hive/constraints.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/hooks.ts->f:entities/Hive/completion.ts:imports",
+      "source": "f:entities/features/clipboards/hooks.ts",
+      "target": "f:entities/Hive/completion.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/manifest.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/clipboards/manifest.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/manifest.ts->f:entities/features/clipboards/schema.ts:imports",
+      "source": "f:entities/features/clipboards/manifest.ts",
+      "target": "f:entities/features/clipboards/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/manifest.ts->f:entities/features/clipboards/hooks.ts:imports",
+      "source": "f:entities/features/clipboards/manifest.ts",
+      "target": "f:entities/features/clipboards/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/schema.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/clipboards/schema.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/clipboards/security.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/features/clipboards/security.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/compose.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/compose.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/compose.ts->f:entities/Hive/effects.ts:imports",
+      "source": "f:entities/features/compose.ts",
+      "target": "f:entities/Hive/effects.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/compose.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/features/compose.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/hooks.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/features/documents/hooks.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/manifest.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/documents/manifest.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/manifest.ts->f:shared/core/constants.ts:imports",
+      "source": "f:entities/features/documents/manifest.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/manifest.ts->f:shared/core/log.ts:imports",
+      "source": "f:entities/features/documents/manifest.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/manifest.ts->f:shared/Routing/routes/io.ts:imports",
+      "source": "f:entities/features/documents/manifest.ts",
+      "target": "f:shared/Routing/routes/io.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/manifest.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:entities/features/documents/manifest.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/manifest.ts->f:entities/features/documents/schema.ts:imports",
+      "source": "f:entities/features/documents/manifest.ts",
+      "target": "f:entities/features/documents/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/manifest.ts->f:entities/features/documents/hooks.ts:imports",
+      "source": "f:entities/features/documents/manifest.ts",
+      "target": "f:entities/features/documents/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/schema.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/documents/schema.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/documents/security.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/features/documents/security.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/feature.ts->f:entities/Hive/effects.ts:imports",
+      "source": "f:entities/features/feature.ts",
+      "target": "f:entities/Hive/effects.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/feature.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/features/feature.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/index.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/index.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/index.ts->f:entities/features/documents/manifest.ts:imports",
+      "source": "f:entities/features/index.ts",
+      "target": "f:entities/features/documents/manifest.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/index.ts->f:entities/features/system-tasks/manifest.ts:imports",
+      "source": "f:entities/features/index.ts",
+      "target": "f:entities/features/system-tasks/manifest.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/index.ts->f:entities/features/clipboards/manifest.ts:imports",
+      "source": "f:entities/features/index.ts",
+      "target": "f:entities/features/clipboards/manifest.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/index.ts->f:entities/features/scratchpad/manifest.ts:imports",
+      "source": "f:entities/features/index.ts",
+      "target": "f:entities/features/scratchpad/manifest.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/scratchpad/hooks.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:entities/features/scratchpad/hooks.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/scratchpad/manifest.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/scratchpad/manifest.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/scratchpad/manifest.ts->f:entities/features/scratchpad/schema.ts:imports",
+      "source": "f:entities/features/scratchpad/manifest.ts",
+      "target": "f:entities/features/scratchpad/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/scratchpad/manifest.ts->f:entities/features/scratchpad/hooks.ts:imports",
+      "source": "f:entities/features/scratchpad/manifest.ts",
+      "target": "f:entities/features/scratchpad/hooks.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/scratchpad/schema.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/scratchpad/schema.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/scratchpad/security.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/features/scratchpad/security.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/security.ts->f:entities/Hive/policy.ts:imports",
+      "source": "f:entities/features/security.ts",
+      "target": "f:entities/Hive/policy.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/security.ts->f:entities/features/documents/security.ts:imports",
+      "source": "f:entities/features/security.ts",
+      "target": "f:entities/features/documents/security.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/security.ts->f:entities/features/clipboards/security.ts:imports",
+      "source": "f:entities/features/security.ts",
+      "target": "f:entities/features/clipboards/security.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/security.ts->f:entities/features/scratchpad/security.ts:imports",
+      "source": "f:entities/features/security.ts",
+      "target": "f:entities/features/scratchpad/security.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:entities/features/system-tasks/manifest.ts->f:entities/features/feature.ts:imports",
+      "source": "f:entities/features/system-tasks/manifest.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Auth/credentials.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:shared/Auth/credentials.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Auth/credentials.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/Auth/credentials.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:shared/Auth/passkey.ts->x:@simplewebauthn/server:imports",
       "source": "f:shared/Auth/passkey.ts",
       "target": "x:@simplewebauthn/server",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Auth/passkey.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/Auth/passkey.ts",
+      "target": "f:shared/core/constants.ts",
       "kind": "imports"
     },
     {
@@ -5991,6 +6280,12 @@
       "kind": "imports"
     },
     {
+      "id": "f:shared/IO/git.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/IO/git.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:shared/IO/og-png.ts->x:@resvg/resvg-wasm:imports",
       "source": "f:shared/IO/og-png.ts",
       "target": "x:@resvg/resvg-wasm",
@@ -6003,10 +6298,76 @@
       "kind": "imports"
     },
     {
+      "id": "f:shared/IO/publications.ts->f:entities/Hive/labels.ts:imports",
+      "source": "f:shared/IO/publications.ts",
+      "target": "f:entities/Hive/labels.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/IO/publications.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/IO/publications.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/IO/publications.ts->f:entities/Hive/prime.ts:imports",
+      "source": "f:shared/IO/publications.ts",
+      "target": "f:entities/Hive/prime.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/IO/publications.ts->f:shared/core/escape.ts:imports",
+      "source": "f:shared/IO/publications.ts",
+      "target": "f:shared/core/escape.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/IO/web.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:shared/IO/web.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/IO/web.ts->f:entities/Hive/kernel.ts:imports",
+      "source": "f:shared/IO/web.ts",
+      "target": "f:entities/Hive/kernel.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/router.ts->f:entities/Hive/hive.ts:imports",
+      "source": "f:shared/Routing/router.ts",
+      "target": "f:entities/Hive/hive.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/router.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/Routing/router.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/router.ts->f:shared/core/log.ts:imports",
+      "source": "f:shared/Routing/router.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:shared/Routing/router.ts->i:OAUTH_KV:binds",
       "source": "f:shared/Routing/router.ts",
       "target": "i:OAUTH_KV",
       "kind": "binds"
+    },
+    {
+      "id": "f:shared/Routing/routes/auth.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:shared/Routing/routes/auth.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/auth.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/Routing/routes/auth.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
     },
     {
       "id": "f:shared/Routing/routes/auth.ts->x:https://esm.sh/@simplewebauthn/browser@13:imports",
@@ -6021,15 +6382,195 @@
       "kind": "binds"
     },
     {
+      "id": "f:shared/Routing/routes/dev.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:shared/Routing/routes/dev.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/io.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:shared/Routing/routes/io.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:shared/Routing/routes/io.ts->x:fflate:imports",
       "source": "f:shared/Routing/routes/io.ts",
       "target": "x:fflate",
       "kind": "imports"
     },
     {
+      "id": "f:shared/Routing/routes/io.ts->f:shared/IO/extract.ts:imports",
+      "source": "f:shared/Routing/routes/io.ts",
+      "target": "f:shared/IO/extract.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/io.ts->f:shared/core/log.ts:imports",
+      "source": "f:shared/Routing/routes/io.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/marketplace.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:shared/Routing/routes/marketplace.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/marketplace.ts->f:shared/IO/git.ts:imports",
+      "source": "f:shared/Routing/routes/marketplace.ts",
+      "target": "f:shared/IO/git.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/marketplace.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/Routing/routes/marketplace.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/pages.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:shared/Routing/routes/pages.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/Routing/routes/pages.ts->f:entities/Session/tools.ts:imports",
+      "source": "f:shared/Routing/routes/pages.ts",
+      "target": "f:entities/Session/tools.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/block-palette.ts->f:shared/core/chart-spec.ts:imports",
+      "source": "f:shared/core/block-palette.ts",
+      "target": "f:shared/core/chart-spec.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/chart-svg.ts->f:shared/core/chart-spec.ts:imports",
+      "source": "f:shared/core/chart-svg.ts",
+      "target": "f:shared/core/chart-spec.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/chart-svg.ts->f:shared/core/escape.ts:imports",
+      "source": "f:shared/core/chart-svg.ts",
+      "target": "f:shared/core/escape.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/dev-seed.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/core/dev-seed.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/dev-seed.ts->f:entities/Hive/schema.ts:imports",
+      "source": "f:shared/core/dev-seed.ts",
+      "target": "f:entities/Hive/schema.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/sql.ts->f:shared/core/constants.ts:imports",
+      "source": "f:shared/core/sql.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/view-palette.ts->f:shared/core/format-palette.ts:imports",
+      "source": "f:shared/core/view-palette.ts",
+      "target": "f:shared/core/format-palette.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:shared/core/view-palette.ts->f:shared/core/chart-spec.ts:imports",
+      "source": "f:shared/core/view-palette.ts",
+      "target": "f:shared/core/chart-spec.ts",
+      "kind": "imports"
+    },
+    {
       "id": "f:src/index.ts->x:@cloudflare/workers-oauth-provider:imports",
       "source": "f:src/index.ts",
       "target": "x:@cloudflare/workers-oauth-provider",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:entities/Session/session.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:entities/Session/session.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:entities/Hive/hive.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:entities/Hive/hive.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/core/constants.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/core/constants.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/Routing/router.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/Routing/router.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:entities/features/index.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:entities/features/index.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:entities/features/compose.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:entities/features/compose.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:entities/features/feature.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:entities/features/feature.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/core/log.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/core/log.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/Routing/routes/auth.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/Routing/routes/auth.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/Routing/routes/io.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/Routing/routes/io.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/Routing/routes/marketplace.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/Routing/routes/marketplace.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/Routing/routes/pages.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/Routing/routes/pages.ts",
+      "kind": "imports"
+    },
+    {
+      "id": "f:src/index.ts->f:shared/Routing/routes/dev.ts:imports",
+      "source": "f:src/index.ts",
+      "target": "f:shared/Routing/routes/dev.ts",
       "kind": "imports"
     },
     {
