@@ -1,5 +1,6 @@
 {
   "claudeMdPath": "../CLAUDE.md",
+  "claudeProjectRoot": "..",
   "outputDir": "docs/coherence",
   "entryDir": ".",
   "tooling": [],
