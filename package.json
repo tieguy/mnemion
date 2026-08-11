@@ -6,5 +6,8 @@
     "deploy": "cd mnemion-js && npm run deploy",
     "dev": "cd mnemion-js && npm run dev",
     "test": "cd mnemion-js && npm test"
+  },
+  "dependencies": {
+    "wrangler": "^4.112.0"
   }
 }

@@ -34,7 +34,7 @@ enabled = true
 # Cold-start fallback only — the runtime prefers the inbound request Host header.
 # Used solely by the _system/instance doc when no HTTP request has been observed
 # since DO eviction. Safe to omit; defaults to "localhost" when missing.
-WORKER_HOST = "your-worker.workers.dev"
+WORKER_HOST = "mnemion.lu-is.workers.dev"
 
 # KV namespace for OAuth tokens. No `id` → Cloudflare auto-provisions one named
 # after the worker on first deploy and keeps it linked on later deploys. This is
@@ -42,6 +42,7 @@ WORKER_HOST = "your-worker.workers.dev"
 # (A local `wrangler deploy` writes the resolved id back into this file.)
 [[kv_namespaces]]
 binding = "OAUTH_KV"
+id = "671e51d2f3f142ab8ab80d1e6f7afd01"
 
 # Session DO (McpAgent, one per MCP session)
 [[durable_objects.bindings]]
