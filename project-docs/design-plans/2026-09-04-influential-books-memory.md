@@ -127,7 +127,7 @@ The CLI follows the `content-archive` repo's convention of a Python project with
 - `book-tools/hardcover_tools/pull.py` — the `pull` subcommand; writes `data/hardcover-library-YYYY-MM-DD.json` with, per user_book: ids, title, slug, contributors, edition ISBNs, status_id, rating, review_raw, and reads (started/finished).
 - `book-tools/hardcover_tools/cli.py` — argparse entry.
 
-**Dependencies:** `HARDCOVER_TOKEN` in `book-tools/.env` (gitignored). Field names confirmed by a live query on 2026-09-04 (library: 1,254 books):
+**Dependencies:** `HARDCOVER_TOKEN` in `book-tools/.env` (gitignored). Field names confirmed by a live query on 2026-09-04 (library: 2,544 `user_books` rows per `user_books_aggregate`; `me.books_count` is a cached counter that read 1,254 and is not the row count):
 
 ```graphql
 { me { id username books_count
