@@ -45,7 +45,7 @@ Two new Mnemion patterns, `authors` and `books`, hold the result. Loading is an 
 
 Three pieces, each with one job.
 
-**1. `hardcover-tools/` — a standalone Python CLI.** Not part of the worker; it lives in its own directory beside the Mnemion repo (final location decided at implementation, candidate: `Self/hardcover-tools/`). Standard library only (`csv`, `json`, `urllib`, `re`, `argparse`). Config is environment variables: `HARDCOVER_TOKEN`, and a bearer token for the Mnemion instance (`*` scope, or a scoped token once one exists) for `refresh`. Subcommands:
+**1. `book-tools/` — a standalone Python CLI.** Not part of the worker; it lives in its own directory beside the Mnemion repo (final location decided at implementation, candidate: `Self/book-tools/`). Standard library only (`csv`, `json`, `urllib`, `re`, `argparse`). Config is environment variables: `HARDCOVER_TOKEN`, and a bearer token for the Mnemion instance (`*` scope, or a scoped token once one exists) for `refresh`. Subcommands:
 
 | Subcommand | Reads | Writes |
 |---|---|---|
@@ -123,11 +123,23 @@ The CLI follows the `content-archive` repo's convention of a Python project with
 **Goal:** A dated local snapshot of the owner's whole Hardcover library.
 
 **Components:**
-- `hardcover-tools/hardcover_tools/api.py` — GraphQL client: bearer auth, paging, 1 req/s throttle, stop on 429/401.
-- `hardcover-tools/hardcover_tools/pull.py` — the `pull` subcommand; writes `data/hardcover-library-YYYY-MM-DD.json` with, per user_book: ids, title, slug, contributors, edition ISBNs, status_id, rating, review_raw, and reads (started/finished).
-- `hardcover-tools/hardcover_tools/cli.py` — argparse entry.
+- `book-tools/hardcover_tools/api.py` — GraphQL client: bearer auth, paging, 1 req/s throttle, stop on 429/401.
+- `book-tools/hardcover_tools/pull.py` — the `pull` subcommand; writes `data/hardcover-library-YYYY-MM-DD.json` with, per user_book: ids, title, slug, contributors, edition ISBNs, status_id, rating, review_raw, and reads (started/finished).
+- `book-tools/hardcover_tools/cli.py` — argparse entry.
 
-**Dependencies:** Owner has generated `HARDCOVER_TOKEN`. First task is one live read query to pin the exact field names for reads and contributors against the real account; the schema at github.com/hardcoverapp/hardcover-docs/schema.graphql is the reference.
+**Dependencies:** `HARDCOVER_TOKEN` in `book-tools/.env` (gitignored). Field names confirmed by a live query on 2026-09-04 (library: 1,254 books):
+
+```graphql
+{ me { id username books_count
+  user_books(limit: 50, offset: 0, order_by: {date_added: desc}) {
+    id status_id rating date_added reviewed_at review_raw
+    book { id title slug cached_contributors }   # [{author:{id,slug,name}, contribution}]
+    edition { id isbn_10 isbn_13 }
+    user_book_reads { id started_at finished_at } # dates as YYYY-MM-DD; both null for an in-progress read
+} } }
+```
+
+`me` returns a one-element list. The response carried no `RateLimit-Policy` header on this call.
 
 **Done when:** `pull` writes a JSON with a book count matching the Hardcover UI; paging and throttle covered by unit tests with a fake transport.
 
@@ -169,7 +181,7 @@ The CLI follows the `content-archive` repo's convention of a Python project with
 **Goal:** A repeatable one-entry-at-a-time loading conversation.
 
 **Components:**
-- The protocol document (system doc under `mnemion-js/src/system-docs/` or a skill in `hardcover-tools/.claude/skills/`), specifying the five steps, the exact mutate shapes for `authors`, `books`, and the `author_of` link, and how `candidates.json` state is updated.
+- The protocol document (system doc under `mnemion-js/src/system-docs/` or a skill in `book-tools/.claude/skills/`), specifying the five steps, the exact mutate shapes for `authors`, `books`, and the `author_of` link, and how `candidates.json` state is updated.
 
 **Dependencies:** Phases 3 and 4.
 
