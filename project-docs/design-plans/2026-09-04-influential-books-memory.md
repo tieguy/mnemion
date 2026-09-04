@@ -211,6 +211,8 @@ The CLI follows the `content-archive` repo's convention of a Python project with
 
 **Nothing destructive, anywhere.** The CLI never writes to Hardcover. `refresh` never archives or creates Mnemion entries and never edits `influence`/`evidence`. The interview creates entries only on an explicit owner answer.
 
+**Proposed, not decided (2026-09-04): review write-back.** When the interview (Phase 5) records an influence note, offer a per-book opt-in: "also post this note as your Hardcover review?" Per book, never global, because some influence notes are private in a way a public review is not. Adopting this revises the "never writes to Hardcover" rule above to "never destructive": the write must only create a review where none exists (or show the existing one and ask before replacing), and the token would need write scope. Before committing to it, confirm the Hardcover GraphQL mutation for user book reviews and whether it overwrites.
+
 **Optional: post-import audit.** The importer's fidelity for read dates and reviews is reported inconsistent. If the `pull` snapshot shows gaps against the original StoryGraph CSV, an `audit` subcommand diffing the two is a natural addition; it is not in scope until the snapshot shows a need.
 
 **Beta API.** Hardcover's API may reset tokens or change field names. Field names are confirmed against the live account in Phase 1 before any code depends on them; the client isolates the query text in one place.
