@@ -45,7 +45,7 @@ Two new Mnemion patterns, `authors` and `books`, hold the result. Loading is an 
 
 Three pieces, each with one job.
 
-**1. `book-tools/` — a standalone Python CLI.** Not part of the worker; it lives in its own directory beside the Mnemion repo (final location decided at implementation, candidate: `Self/book-tools/`). Standard library only (`csv`, `json`, `urllib`, `re`, `argparse`). Config is environment variables: `HARDCOVER_TOKEN`, and a bearer token for the Mnemion instance (`*` scope, or a scoped token once one exists) for `refresh`. Subcommands:
+**1. `book-tools/` — a standalone Python CLI.** Not part of the worker; it lives in its own directory beside the Mnemion repo (final location decided at implementation, candidate: `Self/book-tools/`). Standard library only (`csv`, `json`, `urllib`, `re`, `argparse`). Package path is `src/book_tools/` (src layout, as in `content-archive`); `hardcover_tools/` in the phase lists below means that package. Config is environment variables: `HARDCOVER_TOKEN`, and a bearer token for the Mnemion instance (`*` scope, or a scoped token once one exists) for `refresh`. Subcommands:
 
 | Subcommand | Reads | Writes |
 |---|---|---|
