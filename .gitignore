@@ -36,3 +36,6 @@ mnemion-js/.coherence/
 
 # Workflow/agent isolation worktrees (transient)
 .claude/worktrees/
+
+# coherence transient job files at the repo root
+.coherence/
